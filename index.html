@@ -1,0 +1,1794 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Felt Trainer — GTO + exploit poker drills</title>
+<meta name="description" content="GTO preflop and postflop trainer for 4, 6 and 8-handed cash games, with an exploitative layer for player reads.">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1F5B45" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0F1613" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Felt Trainer">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #E9ECE6; --surface: #FFFFFF; --surface-2: #F3F5F1; --ink: #14201B; --muted: #5F6D65; --line: #D4DAD2;
+  --felt: #1F5B45; --felt-edge: #17483A; --rail: #4D3227; --rail-edge: #33211A;
+  --gold: #D9A441; --good: #2E7D4F; --good-bg: #E3F1E8; --bad: #C0392B; --bad-bg: #F8E4E1; --red: #C63B31;
+  --seat: #0E2C21; --seat-text: #E8EDE9; --seat-dim: #274235; --hero-seat: #F4E4BC;
+  --btn: #14201B; --btn-text: #FFFFFF; --btn-2: #FFFFFF; --focus: #2F6FED;
+  --card: #FFFFFF; --card-ink: #1B1F1D; --card-edge: #C9CFC7;
+  --shadow: 0 1px 2px rgba(20, 32, 27, .08), 0 6px 18px rgba(20, 32, 27, .06);
+  box-sizing: border-box; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0F1613; --surface: #182119; --surface-2: #1F2B23; --ink: #E8EDE9; --muted: #9DAAA2; --line: #2B3730;
+    --felt: #1B4A38; --felt-edge: #143A2C; --rail: #3B2620; --rail-edge: #26170F;
+    --good: #5CC08A; --good-bg: #16342A; --bad: #E8756A; --bad-bg: #3D1F1B; --red: #E45A4F;
+    --seat: #0B2118; --seat-text: #E8EDE9; --seat-dim: #1C2E25; --hero-seat: #E8CF92;
+    --btn: #E8EDE9; --btn-text: #0F1613; --btn-2: #182119; --focus: #7FA7FF;
+    --card: #F6F7F4; --card-ink: #1B1F1D; --card-edge: #B9C0B6;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .35), 0 6px 18px rgba(0, 0, 0, .25);
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0F1613; --surface: #182119; --surface-2: #1F2B23; --ink: #E8EDE9; --muted: #9DAAA2; --line: #2B3730;
+  --felt: #1B4A38; --felt-edge: #143A2C; --rail: #3B2620; --rail-edge: #26170F;
+  --good: #5CC08A; --good-bg: #16342A; --bad: #E8756A; --bad-bg: #3D1F1B; --red: #E45A4F;
+  --seat: #0B2118; --seat-text: #E8EDE9; --seat-dim: #1C2E25; --hero-seat: #E8CF92;
+  --btn: #E8EDE9; --btn-text: #0F1613; --btn-2: #182119; --focus: #7FA7FF;
+  --card: #F6F7F4; --card-ink: #1B1F1D; --card-edge: #B9C0B6;
+  --shadow: 0 1px 2px rgba(0, 0, 0, .35), 0 6px 18px rgba(0, 0, 0, .25);
+}
+html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+*, *::before, *::after { box-sizing: inherit; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font-family: "Manrope", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-size: 16px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+button { font: inherit; color: inherit; }
+button:focus-visible, input:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+.top-inner { max-width: 720px; margin: 0 auto; padding: 10px 14px 8px; display: flex; align-items: center; gap: 10px; }
+.brand { font-weight: 800; letter-spacing: -.01em; font-size: 17px; white-space: nowrap; }
+.brand em { font-style: normal; color: var(--gold); }
+.modes { display: flex; gap: 2px; margin-left: auto; background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px; padding: 3px; }
+.modes button { border: 0; background: transparent; padding: 6px 11px; border-radius: 999px; font-weight: 600; font-size: 13px; color: var(--muted); cursor: pointer; }
+.modes button[aria-selected="true"] { background: var(--btn); color: var(--btn-text); }
+.gear { border: 1px solid var(--line); background: var(--surface); width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; cursor: pointer; flex: none; }
+.gear svg { width: 18px; height: 18px; }
+
+main { max-width: 720px; margin: 0 auto; padding: 14px 14px 40px; }
+.scene-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 2px 2px 10px; }
+h1 { font-size: 19px; line-height: 1.25; margin: 0; font-weight: 800; letter-spacing: -.01em; }
+.meta { font-size: 13px; color: var(--muted); white-space: nowrap; }
+
+.table-wrap { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 10px 6px 4px; box-shadow: var(--shadow); }
+.table-wrap svg { display: block; width: 100%; height: auto; max-height: 330px; margin: 0 auto; }
+.read-line { display: flex; align-items: center; gap: 8px; padding: 6px 8px 8px; font-size: 13px; color: var(--muted); flex-wrap: wrap; }
+.read-pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-weight: 700; font-size: 12px; color: var(--ink); background: var(--surface-2); border: 1px solid var(--line); }
+.read-pill i { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+.read-pill[data-p="nit"] i { background: #4C79C9; } .read-pill[data-p="station"] i { background: #C9A24C; } .read-pill[data-p="maniac"] i { background: #C94C4C; } .read-pill[data-p="tilt"] i { background: #C9704C; }
+
+.history { margin: 12px 2px 0; font-size: 14px; color: var(--muted); line-height: 1.45; }
+.history b { color: var(--ink); font-weight: 700; }
+.history span + span::before { content: " · "; color: var(--line); }
+
+.hero-row { display: flex; align-items: center; gap: 14px; margin: 14px 2px 4px; }
+.hero-cards { display: flex; gap: 8px; }
+.card { width: 62px; height: 88px; border-radius: 9px; background: var(--card); color: var(--card-ink); border: 1px solid var(--card-edge); position: relative; box-shadow: 0 2px 6px rgba(0, 0, 0, .12); font-weight: 800; }
+.card.red { color: var(--red); }
+.card .r { position: absolute; top: 6px; left: 8px; font-size: 22px; line-height: 1; }
+.card .s { position: absolute; right: 8px; bottom: 6px; font-size: 30px; line-height: 1; }
+.card .s2 { position: absolute; top: 30px; left: 9px; font-size: 13px; line-height: 1; opacity: .9; }
+.card.sm { width: 32px; height: 45px; border-radius: 5px; }
+.card.sm .r { font-size: 14px; top: 4px; left: 5px; } .card.sm .s { font-size: 15px; right: 4px; bottom: 3px; } .card.sm .s2 { display: none; }
+.hero-info { font-size: 14px; color: var(--muted); }
+.hero-info b { display: block; color: var(--ink); font-size: 16px; font-weight: 800; }
+.pot-line { font-size: 14px; margin: 6px 2px 0; color: var(--muted); }
+.pot-line b { color: var(--ink); }
+
+.question { font-weight: 700; font-size: 15px; margin: 16px 2px 8px; }
+.actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; }
+.actions button { border: 1.5px solid var(--ink); background: var(--btn-2); border-radius: 12px; padding: 13px 10px; font-weight: 700; font-size: 15px; cursor: pointer; min-height: 50px; transition: transform .08s ease; }
+.actions button:active { transform: scale(.98); }
+.actions button[disabled] { cursor: default; opacity: .55; }
+.actions button.picked { outline: 3px solid var(--ink); outline-offset: 1px; opacity: 1; }
+.actions button.is-best { border-color: var(--good); background: var(--good-bg); opacity: 1; }
+.actions button.is-ok { border-color: var(--good); border-style: dashed; opacity: 1; }
+.actions button.is-wrong { border-color: var(--bad); background: var(--bad-bg); opacity: 1; }
+.actions .kbd { display: inline-block; margin-right: 6px; font-size: 11px; color: var(--muted); font-weight: 600; }
+
+.feedback { margin-top: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px; box-shadow: var(--shadow); }
+.verdict { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 17px; margin-bottom: 8px; }
+.verdict .dot { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-size: 15px; flex: none; }
+.verdict.good .dot { background: var(--good); } .verdict.bad .dot { background: var(--bad); }
+.verdict small { font-weight: 600; color: var(--muted); font-size: 13px; }
+.block { padding: 10px 0; border-top: 1px solid var(--line); }
+.verdict + .block { border-top: 0; }
+.block h3 { margin: 0 0 4px; font-size: 13px; font-weight: 700; color: var(--muted); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.block h3 .ans { color: var(--ink); font-size: 15px; font-weight: 800; }
+.block h3 .also { font-weight: 600; }
+.block p { margin: 0; font-size: 14.5px; line-height: 1.5; }
+.tag { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--good-bg); color: var(--good); }
+.stack-note { font-size: 13px; color: var(--muted); margin-top: 8px; }
+.next { margin-top: 12px; width: 100%; border: 0; background: var(--btn); color: var(--btn-text); border-radius: 12px; padding: 14px; font-weight: 800; font-size: 16px; cursor: pointer; }
+.disclaimer { font-size: 12.5px; color: var(--muted); margin: 14px 2px 0; }
+.disclaimer a { color: inherit; }
+
+.stats { margin-top: 18px; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 12px 16px; }
+.stats-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.stats-head b { font-size: 15px; }
+.stats-head span { font-size: 13px; color: var(--muted); }
+.stats-head button { border: 1px solid var(--line); background: transparent; border-radius: 999px; padding: 5px 10px; font-size: 12px; font-weight: 700; cursor: pointer; }
+.bar { height: 8px; border-radius: 4px; background: var(--surface-2); overflow: hidden; margin: 8px 0 4px; }
+.bar i { display: block; height: 100%; background: var(--good); width: 0; transition: width .3s ease; }
+.cats { list-style: none; margin: 8px 0 0; padding: 0; font-size: 13.5px; }
+.cats li { display: flex; justify-content: space-between; gap: 10px; padding: 4px 0; border-top: 1px solid var(--line); }
+.cats li span:last-child { color: var(--muted); font-variant-numeric: tabular-nums; }
+.cats li.weak span:last-child { color: var(--bad); font-weight: 700; }
+details summary { cursor: pointer; font-size: 13px; color: var(--muted); font-weight: 600; margin-top: 8px; }
+
+.sheet-bg { position: fixed; inset: 0; background: rgba(10, 16, 13, .45); z-index: 20; display: none; }
+.sheet-bg.open { display: block; }
+.sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 21; background: var(--surface); border-radius: 18px 18px 0 0; padding: 14px 18px calc(18px + env(safe-area-inset-bottom, 0px)); max-height: 88vh; overflow: auto; transform: translateY(105%); transition: transform .22s ease; box-shadow: 0 -8px 30px rgba(0, 0, 0, .18); }
+.sheet.open { transform: translateY(0); }
+.sheet-inner { max-width: 720px; margin: 0 auto; }
+.sheet h2 { font-size: 17px; margin: 0 0 6px; }
+.sheet .row { margin: 12px 0; }
+.sheet label { display: block; font-size: 13px; font-weight: 700; color: var(--muted); margin-bottom: 6px; }
+.seg { display: flex; flex-wrap: wrap; gap: 6px; }
+.seg button { border: 1px solid var(--line); background: var(--surface-2); border-radius: 999px; padding: 7px 12px; font-size: 13.5px; font-weight: 600; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--btn); color: var(--btn-text); border-color: var(--btn); }
+.jump { display: flex; gap: 8px; }
+.jump input { flex: 1; border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; font: inherit; background: var(--surface-2); color: var(--ink); min-width: 0; }
+.jump button { border: 1px solid var(--ink); background: transparent; border-radius: 10px; padding: 9px 14px; font-weight: 700; cursor: pointer; }
+.sheet .about { font-size: 13.5px; color: var(--muted); line-height: 1.5; }
+.sheet .about p { margin: 6px 0; }
+.close { margin-top: 12px; width: 100%; border: 0; background: var(--btn); color: var(--btn-text); border-radius: 12px; padding: 12px; font-weight: 800; cursor: pointer; }
+
+@media (max-width: 430px) {
+  .modes button { padding: 6px 8px; font-size: 12px; }
+  .brand { font-size: 15px; }
+  .card { width: 56px; height: 80px; }
+}
+@media (max-width: 380px) {
+  .brand { display: none; }
+  .modes { margin-left: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sheet, .bar i, .actions button { transition: none; }
+}
+
+.review-banner { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: var(--gold); color: #2B1F05; border-radius: 12px; padding: 8px 12px; margin: 0 0 10px; font-size: 14px; font-weight: 600; }
+.review-banner button { border: 1px solid rgba(43, 31, 5, .4); background: transparent; border-radius: 999px; padding: 4px 10px; font-size: 12px; font-weight: 700; cursor: pointer; color: inherit; }
+.think { margin: 12px 0 0; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 0 14px; }
+.think summary { cursor: pointer; padding: 11px 0; font-weight: 700; font-size: 14px; }
+.think[open] summary { border-bottom: 1px solid var(--line); }
+.th-block { padding: 10px 0 4px; }
+.th-block h4 { margin: 0 0 6px; font-size: 13px; color: var(--muted); font-weight: 700; }
+.th-block p { margin: 0 0 8px; font-size: 14px; line-height: 1.5; }
+.pts { margin: 0; padding-left: 18px; font-size: 14px; line-height: 1.5; }
+.pts li { margin: 0 0 6px; }
+.bd { list-style: none; margin: 2px 0 6px; padding: 0; font-size: 13px; }
+.bd li { display: grid; grid-template-columns: 54px 38px 1fr; grid-template-areas: "bar pct lab" "bar pct hands"; column-gap: 8px; align-items: center; padding: 3px 0; }
+.bd-bar { grid-area: bar; height: 8px; background: var(--surface-2); border-radius: 4px; overflow: hidden; }
+.bd-bar i { display: block; height: 100%; background: var(--felt); }
+.bd-pct { grid-area: pct; font-weight: 800; font-variant-numeric: tabular-nums; }
+.bd-lab { grid-area: lab; font-weight: 600; }
+.bd-h { grid-area: hands; color: var(--muted); font-size: 12px; }
+.bd-note { font-size: 13px; color: var(--muted); }
+.eq { font-size: 14px; margin: 4px 0 12px; }
+.eq.muted { color: var(--muted); font-size: 13px; }
+.review-btn { margin-top: 10px; width: 100%; border: 1.5px solid var(--ink); background: transparent; border-radius: 12px; padding: 11px; font-weight: 700; cursor: pointer; }
+.review-btn[disabled] { opacity: .45; cursor: default; }
+
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-inner">
+    <div class="brand">Felt <em>trainer</em></div>
+    <nav class="modes" id="modes" role="tablist" aria-label="Training mode"></nav>
+    <button class="gear" id="gear" type="button" aria-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3h.1a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8v.1a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"></path></svg></button>
+  </div>
+</header>
+<main>
+  <section class="scene">
+    <div class="review-banner" id="reviewBanner" hidden></div>
+    <div class="scene-head"><h1 id="title">Loading…</h1><div class="meta" id="meta"></div></div>
+    <div class="table-wrap">
+      <div id="table"></div>
+      <div class="read-line" id="readLine"></div>
+    </div>
+    <div class="history" id="history"></div>
+    <div class="hero-row">
+      <div class="hero-cards" id="heroCards"></div>
+      <div class="hero-info" id="heroInfo"></div>
+    </div>
+    <div class="pot-line" id="potLine"></div>
+    <details class="think" id="think" hidden><summary>Think it through: their likely hands and what to weigh</summary><div id="thinkBody"></div></details>
+  </section>
+  <div class="question" id="question">Your action?</div>
+  <section class="actions" id="actions" aria-label="Choose an action"></section>
+  <section class="feedback" id="feedback" aria-live="polite" hidden></section>
+  <p class="disclaimer">Preflop answers follow standard 100bb solver-derived charts (adjusted for 40bb and 200bb). Postflop answers are heuristic approximations of solver tendencies, not solver-exact frequencies. "Also fine" marks mixed spots. When a read is set, the graded answer is the exploit; the GTO baseline is always shown alongside it.</p>
+  <section class="stats" aria-label="Your accuracy">
+    <div class="stats-head"><div id="statsHead"></div><button type="button" id="resetBtn">Reset</button></div>
+    <div class="bar"><i id="bar"></i></div>
+    <details><summary>Accuracy by spot type</summary><ul class="cats" id="cats"></ul></details>
+    <button type="button" class="review-btn" id="reviewBtn">Review missed spots</button>
+  </section>
+</main>
+
+<div class="sheet-bg" id="sheetBg"></div>
+<div class="sheet" id="sheet" role="dialog" aria-label="Settings" aria-modal="true">
+  <div class="sheet-inner">
+    <h2>Settings</h2>
+    <div class="row"><label>Table size</label><div class="seg" id="segTable"></div></div>
+    <div class="row"><label>Effective stacks</label><div class="seg" id="segStack"></div></div>
+    <div class="row"><label>Villain read (Preflop, Postflop and Mixed modes; Exploit mode picks a read for you)</label><div class="seg" id="segRead"></div></div>
+    <div class="row"><label>Straddle (under the gun posts 2bb and acts last preflop)</label><div class="seg" id="segStraddle"></div></div>
+    <div class="row"><label>Jump to a spot number</label><div class="jump"><input id="jumpInput" type="number" min="1" inputmode="numeric" placeholder="e.g. 1042"><button type="button" id="jumpBtn">Go</button></div></div>
+    <div class="about">
+      <p id="libNote"></p>
+      <p>Modes: <b>Preflop</b> drills opening, facing raises, 3-bets, 4-bets, squeezes and limpers. <b>Postflop</b> drills c-bets, defending, floating, barrels, river spots, check-raises and multiway pots. <b>Exploit</b> gives every spot a player read and grades the exploitative line. <b>Mixed</b> shuffles all of it. Missed spots are saved so you can replay them from the stats card until you get them right.</p>
+      <p>Cash-game assumptions: 2.5bb opens (3bb from the small blind), 3-bets of 3x in position and 4x out of position, no antes. New players are "unknown" until you have showdowns; a 40bb stack models a fresh rebuy. With a straddle on, opens are 5bb, the straddle defends like a big blind, the big blind plays like a small blind, and everyone is effectively half as deep. Opponent ranges and the equity check are approximations built from the same charts, adjusted for the read you set.</p>
+    </div>
+    <button class="close" type="button" id="applyBtn">Apply and deal</button>
+  </div>
+</div>
+<script>
+/* ===================== GTO + Exploit trainer engine ===================== */
+const RANKS = '23456789TJQKA';
+const RV = {}; for (let i = 0; i < 13; i++) RV[RANKS[i]] = i + 2;
+const RN = {}; for (let i = 0; i < 13; i++) RN[i + 2] = RANKS[i];
+const SUITS = ['s', 'h', 'd', 'c'];
+const SUIT_GLYPH = { s: '\u2660', h: '\u2665', d: '\u2666', c: '\u2663' };
+const RANK_WORD = { A: 'ace', K: 'king', Q: 'queen', J: 'jack', T: 'ten', 9: 'nine', 8: 'eight', 7: 'seven', 6: 'six', 5: 'five', 4: 'four', 3: 'three', 2: 'deuce' };
+
+function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function pick(rng, arr) { return arr[Math.floor(rng() * arr.length)]; }
+function weighted(rng, pairs) { let tot = 0; for (const p of pairs) tot += p[1]; let x = rng() * tot; for (const p of pairs) { x -= p[1]; if (x <= 0) return p[0]; } return pairs[pairs.length - 1][0]; }
+function r05(x) { return Math.round(x * 2) / 2; }
+function fmtBB(x) { return (Math.round(x * 10) / 10).toString().replace(/\.0$/, ''); }
+
+/* ---------- hand classes & ranges ---------- */
+const ALL_CLASSES = (() => { const out = []; for (let i = 12; i >= 0; i--) for (let j = 12; j >= 0; j--) { const a = RANKS[i], b = RANKS[j]; if (i === j) out.push(a + a); else if (i > j) out.push(a + b + 's'); else out.push(b + a + 'o'); } return out; })();
+function classOf(c1, c2) { const hi = RV[c1.r] >= RV[c2.r] ? c1 : c2, lo = hi === c1 ? c2 : c1; if (c1.r === c2.r) return c1.r + c2.r; return hi.r + lo.r + (hi.s === lo.s ? 's' : 'o'); }
+function combosOf(cls) { return cls.length === 2 ? 6 : (cls[2] === 's' ? 4 : 12); }
+function expandToken(t) {
+  const m = t.match(/^([2-9TJQKA])([2-9TJQKA])([so]?)(\+?)(?:-([2-9TJQKA])([2-9TJQKA])([so]?))?$/);
+  if (!m) throw new Error('bad range token ' + t);
+  const r1 = m[1], r2 = m[2], suf = m[3], plus = m[4], e1 = m[5], e2 = m[6];
+  const out = [];
+  if (r1 === r2) {
+    if (plus) { for (let v = RV[r1]; v <= 14; v++) out.push(RN[v] + RN[v]); }
+    else if (e1) { const a = RV[r1], b = RV[e1]; for (let v = Math.min(a, b); v <= Math.max(a, b); v++) out.push(RN[v] + RN[v]); }
+    else out.push(r1 + r1);
+    return out;
+  }
+  const hi = RV[r1] >= RV[r2] ? r1 : r2, lo = hi === r1 ? r2 : r1;
+  const sufs = suf ? [suf] : ['s', 'o'];
+  if (plus) { for (let v = RV[lo]; v < RV[hi]; v++) sufs.forEach(s => out.push(hi + RN[v] + s)); }
+  else if (e1) { const ehi = RV[e1] >= RV[e2] ? e1 : e2, elo = ehi === e1 ? e2 : e1; const a = RV[lo], b = RV[elo]; for (let v = Math.min(a, b); v <= Math.max(a, b); v++) sufs.forEach(s => out.push(hi + RN[v] + s)); }
+  else sufs.forEach(s => out.push(hi + lo + s));
+  return out;
+}
+const rangeCache = {};
+function parseRange(str) { if (rangeCache[str]) return rangeCache[str]; const set = new Set(); str.split(',').forEach(tok => { tok = tok.trim(); if (tok) expandToken(tok).forEach(h => set.add(h)); }); rangeCache[str] = set; return set; }
+function inR(str, cls) { return parseRange(str).has(cls); }
+function rangePct(str) { let c = 0; parseRange(str).forEach(h => c += combosOf(h)); return Math.round(c / 1326 * 100); }
+function unionR() { const s = new Set(); for (const str of arguments) parseRange(str).forEach(h => s.add(h)); return s; }
+
+/* ---------- preflop tables (100bb baseline, approximating solver output) ---------- */
+const RFI = {
+  UTG: '22+, A9s+, A5s, A4s, KTs+, QTs+, JTs, T9s, AQo+, KQo',
+  UTG1: '22+, A8s+, A5s-A2s, K9s+, QTs+, J9s+, T9s, 98s, AJo+, KQo',
+  LJ: '22+, A2s+, K9s+, Q9s+, J9s+, T9s, 98s, 87s, 76s, ATo+, KJo+',
+  HJ: '22+, A2s+, K7s+, Q9s+, J9s+, T8s+, 97s+, 86s+, 76s, 65s, ATo+, KJo+, QJo',
+  CO: '22+, A2s+, K5s+, Q8s+, J8s+, T8s+, 97s+, 86s+, 75s+, 65s, 54s, A9o+, KTo+, QTo+, JTo',
+  BTN: '22+, A2s+, K2s+, Q4s+, J6s+, T6s+, 96s+, 85s+, 75s+, 64s+, 54s, A2o+, K8o+, Q9o+, J9o+, T9o',
+  SB: '22+, A2s+, K2s+, Q5s+, J7s+, T7s+, 96s+, 86s+, 75s+, 65s, 54s, A4o+, K9o+, Q9o+, J9o+, T9o'
+};
+const VS_OPEN = {
+  IP: {
+    EP: { v: 'QQ+, AKs, AKo, AQs', b: 'A5s, A4s', c: '22-JJ, ATs, AJs, KQs, KJs, QJs, JTs, T9s, 98s, 87s, AQo' },
+    MP: { v: 'JJ+, AQs, AKs, AKo', b: 'A5s-A3s, K9s', c: '22-TT, A9s-AJs, KTs, KJs, QTs, QJs, J9s, JTs, T9s, 98s, 87s, 76s, AJo, AQo, KQo' },
+    LP: { v: 'TT+, AJs, AQs, AKs, AQo, AKo, KQs', b: 'A5s-A2s, K9s, K8s, Q9s', c: '22-99, A6s-ATs, KTs, KJs, QTs, QJs, J9s, JTs, T8s, T9s, 97s, 98s, 87s, 76s, 65s, ATo, AJo, KJo, KQo, QJo' }
+  },
+  SB: {
+    EP: { v: 'JJ+, AQs, AKs, AKo', b: 'A5s, A4s', c: '66-TT, ATs, AJs, KQs, KJs, QJs, JTs, T9s, AQo' },
+    MP: { v: 'TT+, AJs, AQs, AKs, AQo, AKo, KQs', b: 'A5s-A2s, K9s, 76s', c: '55-99, A9s, ATs, KTs, KJs, QTs, QJs, JTs, T9s, 98s, AJo, KQo' },
+    LP: { v: '99+, ATs+, KJs+, QJs, AJo+, KQo', b: 'A2s-A9s, K9s, KTs, Q9s, QTs, J9s, JTs, T9s, 98s, 87s', c: '22-88, 76s, 65s' }
+  },
+  BB: {
+    EP: { v: 'QQ+, AKs, AKo, AQs', b: 'A5s-A2s', c: '22-JJ, A6s-AJs, K9s+, Q9s+, J9s+, T8s+, 97s+, 86s+, 75s+, 65s, 54s, AJo, AQo, KQo, KJo, QJo, JTo' },
+    MP: { v: 'JJ+, AQs, AKs, AKo', b: 'A5s-A2s, K9s', c: '22-TT, A6s-AJs, K8s, KTs+, Q9s+, J9s+, T8s+, 97s+, 86s+, 75s+, 64s+, 54s, ATo-AQo, KJo, KQo, QJo, JTo, T9o' },
+    LP: { v: '99+, ATs+, KJs+, QJs, AJo+, KQo', b: 'A5s-A2s, K9s, K8s, Q9s, J9s', c: '22-88, A6s-A9s, K2s-K7s, KTs, Q4s-Q8s, QTs, J6s-J8s, JTs, T6s-T9s, 96s-98s, 85s-87s, 74s-76s, 63s-65s, 53s, 54s, 43s, A2o-ATo, K8o-KJo, Q9o-QJo, J9o, JTo, T8o, T9o, 98o, 87o' },
+    SB: { v: '99+, ATs+, KJs+, QJs, AJo+, KQo', b: 'A5s-A2s, K9s, K8s, Q9s, J9s, T9s', c: '22-88, A6s-A9s, K2s-K7s, KTs, Q2s-Q8s, QTs, J5s-J8s, JTs, T5s-T8s, 95s-98s, 84s-87s, 74s-76s, 63s-65s, 53s, 54s, 43s, A2o-ATo, K5o-KJo, Q8o-QJo, J8o-JTo, T7o-T9o, 97o, 98o, 87o, 76o' }
+  }
+};
+const VS_3BET = {
+  EP: { IP: { v: 'KK+, AKs', b: 'A5s', c: '77-QQ, AKo, AQs, AJs, KQs, KJs, QJs, JTs, T9s' }, OOP: { v: 'KK+, AKs, AKo', b: 'A5s', c: '88-QQ, AQs, AJs, KQs, KJs, QJs, JTs' } },
+  MP: { IP: { v: 'QQ+, AKs, AKo', b: 'A5s, A4s', c: '55-JJ, ATs-AQs, KTs+, QTs+, JTs, T9s, 98s, AQo, KQo' }, OOP: { v: 'QQ+, AKs, AKo', b: 'A5s, A4s', c: '66-JJ, ATs-AQs, KTs+, QTs+, JTs, T9s, 98s, AQo, KQo' } },
+  LP: { IP: { v: 'QQ+, AKs, AKo', b: 'A5s-A3s', c: '22-JJ, A9s-AQs, K9s+, Q9s+, J9s+, T9s, 98s, 87s, 76s, AJo, AQo, KJo, KQo, QJo' }, OOP: { v: 'QQ+, AKs, AKo', b: 'A5s-A2s', c: '22-JJ, A6s-AQs, K9s+, Q9s+, J9s+, T8s+, 97s+, 86s+, 75s+, 65s, ATo-AQo, KJo, KQo, QJo, JTo' } },
+  SB: { IP: { v: 'QQ+, AKs, AKo', b: 'A5s-A3s', c: '22-JJ, A6s-AQs, K9s+, Q9s+, J9s+, T9s, 98s, 87s, ATo-AQo, KJo, KQo, QJo' } }
+};
+const VS_4BET = { IP: { jam: 'KK+, AKs', call: 'TT-QQ, AKo, AQs' }, OOP: { jam: 'KK+, AKs', call: 'JJ, QQ, AKo, AQs' } };
+const SQUEEZE = {
+  IP: { v: 'JJ+, AQs, AKs, AKo', b: 'A5s, A4s', c: '22-TT, A6s-AJs, K9s+, Q9s+, J9s+, T8s+, 97s+, 86s+, 75s+, 65s, AQo, AJo, KQo' },
+  OOP: { v: 'JJ+, AQs, AKs, AKo', b: 'A5s, A4s', c: '22-TT, A2s-AJs, K8s+, Q9s+, J9s+, T8s+, 97s+, 86s+, 75s+, 64s+, 54s, AQo, AJo, KQo, KJo, QJo' }
+};
+const VS_LIMP = {
+  IP: { r1: '22+, A2s+, K8s+, Q9s+, J9s+, T9s, 98s, 87s, 76s, ATo+, KJo+, QJo', r2: '55+, A8s+, KTs+, QTs+, JTs, T9s, AJo+, KQo', l: '22+, A2s+, K5s+, Q6s+, J7s+, T7s+, 96s+, 86s+, 75s+, 65s, 54s, ATo+, KJo+, QJo' },
+  SB: { r: '77+, ATs+, KJs+, QJs, AJo+, KQo', l: '22-66, A2s-A9s, K9s, KTs, Q9s, QTs, J9s, JTs, T8s, T9s, 97s, 98s, 86s, 87s, 75s, 76s, 65s, 54s, ATo, KQo' },
+  BB: { r: '88+, ATs+, KJs+, QJs, AJo+, KQo' }
+};
+const SPEC_HANDS = '22-66, 87s, 76s, 65s, 54s, 43s, 98s, T8s, 97s, 86s, 75s, 64s, 53s, J9s, T9s, A2s-A9s';
+const DOMINATED_VS_TIGHT = 'AJo, ATo, KQo, KJo, KJs, ATs, QJs, KTs, QTs';
+
+const PLAYABLE = parseRange(RFI.BTN);
+
+const TABLES = { 8: ['UTG', 'UTG+1', 'MP', 'HJ', 'CO', 'BTN', 'SB', 'BB'], 6: ['UTG', 'HJ', 'CO', 'BTN', 'SB', 'BB'], 4: ['CO', 'BTN', 'SB', 'BB'] };
+const BEHIND_KEY = { 0: 'BTN', 1: 'CO', 2: 'HJ', 3: 'LJ', 4: 'UTG1', 5: 'UTG' };
+const KEY_NAME = { UTG: 'under the gun', UTG1: 'UTG+1', LJ: 'lojack', HJ: 'hijack', CO: 'cutoff', BTN: 'button', SB: 'small blind', BB: 'big blind' };
+const LABEL_NAME = { UTG: 'under-the-gun', 'UTG+1': 'UTG+1', MP: 'middle-position', HJ: 'hijack', CO: 'cutoff', BTN: 'button', SB: 'small-blind', BB: 'big-blind' };
+function posName(n, idx) { return LABEL_NAME[TABLES[n][idx]]; }
+function withArt(word) { return (/^[aeiou]/i.test(word) ? 'an ' : 'a ') + word; }
+const RFI_ORDER = ['UTG', 'UTG1', 'LJ', 'HJ', 'CO', 'BTN', 'SB'];
+function rangeKey(n, idx) { const labels = TABLES[n]; const lab = labels[idx]; if (lab === 'SB' || lab === 'BB') return lab; return BEHIND_KEY[labels.indexOf('BTN') - idx]; }
+function bucket(key) { if (key === 'UTG' || key === 'UTG1' || key === 'LJ') return 'EP'; if (key === 'HJ') return 'MP'; if (key === 'CO' || key === 'BTN') return 'LP'; return key; }
+function firstOpenKey(cls) { for (const k of RFI_ORDER) if (inR(RFI[k], cls)) return k; return null; }
+const BUCKET_NAME = { EP: 'an early-position', MP: 'a middle-position', LP: 'a late-position', SB: 'a small-blind' };
+
+const PROFILES = {
+  unknown: { label: 'Unknown / new player', short: 'Unknown', desc: 'No reads yet. Play the GTO baseline and watch the first showdowns.' },
+  nit: { label: 'Tight player (nit)', short: 'Tight', desc: 'Opens ~10-15%, rarely limps, rarely bluffs. Big bets mean it.' },
+  station: { label: 'Calling station', short: 'Station', desc: 'Limps and calls with anything, almost never raises without a hand.' },
+  maniac: { label: 'Maniac (LAG)', short: 'Maniac', desc: 'Raises and barrels constantly, bluffs far too much.' },
+  tilt: { label: 'Just rebought (tilting)', short: 'Tilted', desc: 'Lost a stack, rebought, now calling light and raising angry for an orbit.' }
+};
+
+/* ---------- hand descriptors ---------- */
+function handTags(cls) {
+  const t = {}; const hi = cls[0], lo = cls[1], suited = cls[2] === 's', pair = cls.length === 2;
+  const h = RV[hi], l = RV[lo];
+  t.pair = pair; t.suited = suited;
+  if (pair) { t.pairTier = h >= 12 ? 'premium' : h >= 9 ? 'strong' : h >= 6 ? 'medium' : 'small'; }
+  t.broadway = !pair && h >= 10 && l >= 10;
+  t.suitedAce = !pair && suited && hi === 'A';
+  t.wheelAce = t.suitedAce && l <= 5;
+  t.connector = !pair && suited && h - l === 1 && h <= 10;
+  t.gapper = !pair && suited && (h - l === 2 || h - l === 3) && h <= 11;
+  t.offAce = !pair && !suited && hi === 'A';
+  t.offBroadway = t.broadway && !suited;
+  t.suitedBroadway = t.broadway && suited;
+  t.speculative = t.connector || t.gapper || (t.suitedAce && l <= 9) || (pair && h <= 6);
+  return t;
+}
+function handName(cls) {
+  if (cls.length === 2) return 'pocket ' + RANK_WORD[cls[0]] + 's';
+  return cls[0] + cls[1] + (cls[2] === 's' ? ' suited' : ' offsuit');
+}
+
+/* ---------- cards ---------- */
+function cardsFor(rng, cls) {
+  const hi = cls[0], lo = cls[1];
+  if (cls.length === 2) { const s = pick(rng, SUITS); let s2 = pick(rng, SUITS); while (s2 === s) s2 = pick(rng, SUITS); return [{ r: hi, s }, { r: lo, s: s2 }]; }
+  const s = pick(rng, SUITS);
+  if (cls[2] === 's') return [{ r: hi, s }, { r: lo, s }];
+  let s2 = pick(rng, SUITS); while (s2 === s) s2 = pick(rng, SUITS); return [{ r: hi, s }, { r: lo, s: s2 }];
+}
+function sampleClass(rng, setOrNull) {
+  if (setOrNull) { const arr = [...setOrNull]; const pairs = arr.map(c => [c, combosOf(c)]); return weighted(rng, pairs); }
+  if (rng() < 0.78) { return weighted(rng, [...PLAYABLE].map(c => [c, combosOf(c)])); }
+  return weighted(rng, ALL_CLASSES.map(c => [c, combosOf(c)]));
+}
+function dealCards(rng, exclude, k) {
+  const used = new Set(exclude.map(c => c.r + c.s)); const out = [];
+  while (out.length < k) { const c = { r: pick(rng, RANKS.split('')), s: pick(rng, SUITS) }; const key = c.r + c.s; if (used.has(key)) continue; used.add(key); out.push(c); }
+  return out;
+}
+function cardStr(c) { return c.r + SUIT_GLYPH[c.s]; }
+function boardStr(b) { return b.map(cardStr).join(' '); }
+
+/* ---------- hand evaluation ---------- */
+function hasStraight(set) { // set of rank values (2..14, with 1 for ace-low)
+  let run = 0; for (let v = 1; v <= 14; v++) { if (set.has(v)) { run++; if (run >= 5) return v; } else run = 0; } return 0;
+}
+function straightTop(set) { let best = 0, run = 0; for (let v = 1; v <= 14; v++) { if (set.has(v)) { run++; if (run >= 5) best = v; } else run = 0; } return best; }
+function bestHand(cards) { // returns {cat, tb}
+  const counts = {}; const suits = {};
+  cards.forEach(c => { counts[RV[c.r]] = (counts[RV[c.r]] || 0) + 1; (suits[c.s] = suits[c.s] || []).push(RV[c.r]); });
+  let flushSuit = null; for (const s in suits) if (suits[s].length >= 5) flushSuit = s;
+  if (flushSuit) { const set = new Set(suits[flushSuit]); if (set.has(14)) set.add(1); const top = straightTop(set); if (top) return { cat: 8, tb: [top] }; }
+  const groups = Object.keys(counts).map(v => [+v, counts[v]]).sort((a, b) => b[1] - a[1] || b[0] - a[0]);
+  if (groups[0][1] === 4) return { cat: 7, tb: [groups[0][0], Math.max(...groups.filter(g => g[0] !== groups[0][0]).map(g => g[0]), 0)] };
+  if (groups[0][1] === 3 && groups.length > 1 && groups[1][1] >= 2) return { cat: 6, tb: [groups[0][0], groups[1][0]] };
+  if (flushSuit) return { cat: 5, tb: suits[flushSuit].sort((a, b) => b - a).slice(0, 5) };
+  const rset = new Set(Object.keys(counts).map(Number)); if (rset.has(14)) rset.add(1);
+  const st = straightTop(rset); if (st && cards.length >= 5) return { cat: 4, tb: [st] };
+  if (groups[0][1] === 3) return { cat: 3, tb: [groups[0][0], ...groups.slice(1).map(g => g[0]).slice(0, 2)] };
+  if (groups[0][1] === 2 && groups.length > 1 && groups[1][1] === 2) return { cat: 2, tb: [groups[0][0], groups[1][0], groups.length > 2 ? Math.max(...groups.slice(2).map(g => g[0])) : 0] };
+  if (groups[0][1] === 2) return { cat: 1, tb: [groups[0][0], ...groups.slice(1).map(g => g[0]).slice(0, 3)] };
+  return { cat: 0, tb: groups.map(g => g[0]).slice(0, 5) };
+}
+function cmpHand(a, b) { if (a.cat !== b.cat) return a.cat - b.cat; for (let i = 0; i < Math.max(a.tb.length, b.tb.length); i++) { const x = a.tb[i] || 0, y = b.tb[i] || 0; if (x !== y) return x - y; } return 0; }
+
+const TIER_ORDER = ['monster', 'strong', 'draw_strong', 'medium', 'draw_weak', 'weak_sdv', 'air'];
+function tierRank(t) { return TIER_ORDER.indexOf(t); }
+function betterTier(a, b) { return tierRank(a) <= tierRank(b) ? a : b; }
+
+function analyze(hero, board) {
+  const all = hero.concat(board);
+  const best = bestHand(all), bo = bestHand(board);
+  const bRanks = [...new Set(board.map(c => RV[c.r]))].sort((a, b) => b - a);
+  const bmax = bRanks[0];
+  const h = [RV[hero[0].r], RV[hero[1].r]].sort((a, b) => b - a);
+  const pocket = h[0] === h[1];
+  const boardPaired = bo.cat >= 1;
+  const a = { made: 'nothing', madeTier: 'air', desc: '', fd: null, bdfd: false, sd: 0, overs: 0, tier: 'air', drawTier: null, drawDesc: '', sdv: false, onePair: false };
+  a.improves = cmpHand(best, bo) > 0;
+  const missing = (() => { for (let v = 14; v >= 2; v--) if (!bRanks.includes(v)) return v; return 0; })();
+  if (a.improves) {
+    switch (best.cat) {
+      case 8: a.made = 'straight flush'; a.madeTier = 'monster'; break;
+      case 7: a.made = 'quads'; a.madeTier = 'monster'; break;
+      case 6: a.made = 'full house'; a.madeTier = 'monster'; break;
+      case 5: {
+        let fs = null; const cnt = {}; all.forEach(c => cnt[c.s] = (cnt[c.s] || 0) + 1); for (const s in cnt) if (cnt[s] >= 5) fs = s;
+        const heroF = hero.filter(c => c.s === fs);
+        if (!heroF.length) { a.made = 'playing the board flush'; a.madeTier = 'weak_sdv'; }
+        else { a.made = heroF.some(c => c.r === 'A') ? 'nut flush' : 'flush'; a.madeTier = 'monster'; }
+        break;
+      }
+      case 4: a.made = 'straight'; a.madeTier = 'monster'; break;
+      case 3: {
+        if (pocket) { a.made = 'set'; a.madeTier = 'monster'; }
+        else if (bo.cat === 1) { const k = hero.find(c => RV[c.r] !== best.tb[0]); a.made = 'trips'; a.madeTier = (k && RV[k.r] >= 12) ? 'monster' : 'strong'; }
+        else { a.made = 'board trips, ' + RANK_WORD[hero[0].r] + ' kicker'; a.madeTier = 'weak_sdv'; }
+        break;
+      }
+      case 2: {
+        if (pocket) { classifyPocket(a, h[0], bRanks, true); }
+        else {
+          const hits = hero.filter(c => bRanks.includes(RV[c.r]));
+          if (hits.length === 2 && hits[0].r !== hits[1].r) { a.made = 'two pair'; a.madeTier = 'monster'; }
+          else if (hits.length === 0) classifyHighCard(a, hero, bmax, true);
+          else classifyOnePair(a, hero, bRanks, missing, true);
+        }
+        break;
+      }
+      case 1: {
+        if (pocket) classifyPocket(a, h[0], bRanks, false);
+        else if (!hero.some(c => bRanks.includes(RV[c.r]))) classifyHighCard(a, hero, bmax, true);
+        else classifyOnePair(a, hero, bRanks, missing, boardPaired);
+        break;
+      }
+      default: classifyHighCard(a, hero, bmax, false);
+    }
+  } else {
+    a.made = board.length >= 5 ? 'playing the board' : 'nothing'; a.madeTier = 'air';
+    if (!pocket) a.overs = hero.filter(c => RV[c.r] > bmax).length;
+  }
+  a.onePair = /pair/.test(a.made) && a.made !== 'two pair';
+  // draws
+  if (board.length <= 4 && best.cat < 4) {
+    const sc = {}; all.forEach(c => sc[c.s] = (sc[c.s] || 0) + 1);
+    for (const s in sc) {
+      const heroCnt = hero.filter(c => c.s === s).length;
+      if (sc[s] === 4 && heroCnt >= 1) { const hc = hero.filter(c => c.s === s); a.fd = { suit: s, heroCnt, nut: hc.some(c => c.r === 'A'), oneCard: heroCnt === 1, weakOne: heroCnt === 1 && !hc.some(c => c.r === 'A' || c.r === 'K') }; }
+      else if (sc[s] === 3 && heroCnt >= 2 && board.length === 3) a.bdfd = true;
+    }
+    const have = new Set(all.map(c => RV[c.r])); if (have.has(14)) have.add(1);
+    const bhave = new Set(board.map(c => RV[c.r])); if (bhave.has(14)) bhave.add(1);
+    let outs = 0;
+    for (let r = 2; r <= 14; r++) {
+      if (have.has(r)) continue;
+      const s2 = new Set(have); s2.add(r); if (r === 14) s2.add(1);
+      const b2 = new Set(bhave); b2.add(r); if (r === 14) b2.add(1);
+      if (hasStraight(s2) && !hasStraight(b2)) outs++;
+    }
+    a.sd = outs;
+  }
+  if (a.fd && a.sd >= 2) { a.drawTier = 'draw_strong'; a.drawDesc = 'flush draw plus straight draw (combo draw)'; }
+  else if (a.fd) { a.drawTier = a.fd.weakOne ? 'draw_weak' : 'draw_strong'; a.drawDesc = a.fd.nut ? 'nut flush draw' : (a.fd.heroCnt === 2 ? 'flush draw' : 'flush draw (one card, three-flush board)'); }
+  else if (a.sd >= 2) { a.drawTier = 'draw_strong'; a.drawDesc = 'open-ended straight draw'; }
+  else if (a.sd === 1) { a.drawTier = 'draw_weak'; a.drawDesc = a.overs ? 'gutshot with overcards' : 'gutshot'; }
+  else if (a.bdfd && a.overs === 2) { a.drawTier = 'draw_weak'; a.drawDesc = 'backdoor flush draw with two overcards'; }
+  a.tier = a.drawTier ? betterTier(a.madeTier, a.drawTier) : a.madeTier;
+  a.sdv = tierRank(a.madeTier) <= tierRank('weak_sdv') && a.madeTier !== 'air';
+  const madeA = /^(overpair|underpair)/.test(a.made) ? 'an ' + a.made : /^(straight|full house|flush|set|pocket pair)/.test(a.made) ? 'a ' + a.made : /^nut flush/.test(a.made) ? 'the ' + a.made : a.made;
+  const drawA = a.drawDesc ? (/^open/.test(a.drawDesc) ? 'an ' : 'a ') + a.drawDesc : '';
+  a.descBare = a.made + (a.drawDesc ? (a.made === 'nothing' ? '' : ' + ') + a.drawDesc : '');
+  a.desc = a.made === 'nothing' && a.drawDesc ? drawA : madeA + (drawA ? ' with ' + drawA : '');
+  return a;
+}
+function classifyHighCard(a, hero, bmax, boardPaired) {
+  const overs = hero.filter(c => RV[c.r] > bmax).length; a.overs = overs;
+  if (hero.some(c => c.r === 'A')) { a.made = overs === 2 ? 'ace-high, two overcards' : 'ace-high'; a.madeTier = 'weak_sdv'; }
+  else if (overs === 2) { a.made = 'two overcards'; a.madeTier = 'air'; }
+  else { a.made = 'nothing'; a.madeTier = 'air'; }
+  if (boardPaired) a.made += ' (board paired)';
+}
+function classifyPocket(a, pr, bRanks, boardPaired) {
+  const distinct = bRanks.filter(v => v !== pr);
+  if (pr > distinct[0]) { a.made = 'overpair'; a.madeTier = 'strong'; }
+  else if (distinct.length > 1 && pr > distinct[1]) { a.made = 'pocket pair below the top card'; a.madeTier = 'medium'; }
+  else { a.made = 'underpair'; a.madeTier = 'weak_sdv'; }
+  if (boardPaired) a.made += ' (board paired)';
+}
+function classifyOnePair(a, hero, bRanks, missing, boardPaired) {
+  const hit = hero.find(c => bRanks.includes(RV[c.r])); const kick = hero.find(c => c !== hit);
+  const idx = bRanks.indexOf(RV[hit.r]); const kv = RV[kick.r];
+  if (idx === 0) {
+    if (kv === missing) { a.made = 'top pair, top kicker'; a.madeTier = 'strong'; }
+    else if (kv >= 10) { a.made = 'top pair, good kicker'; a.madeTier = 'strong'; }
+    else { a.made = 'top pair, weak kicker'; a.madeTier = 'medium'; }
+  } else if (idx === 1) { a.made = 'second pair'; a.madeTier = 'medium'; }
+  else { a.made = 'bottom pair'; a.madeTier = 'weak_sdv'; }
+  if (boardPaired) a.made += ' (board paired)';
+}
+
+/* ---------- board texture ---------- */
+function texture(board) {
+  const flop = board.slice(0, 3);
+  const ranks = flop.map(c => RV[c.r]).sort((a, b) => b - a);
+  const distinct = [...new Set(ranks)];
+  const high = ranks[0];
+  const t = { high, highCat: high === 14 ? 'A' : high === 13 ? 'K' : high === 12 ? 'Q' : high === 11 ? 'J' : high === 10 ? 'T' : 'low' };
+  t.paired = distinct.length < 3; t.trips = distinct.length === 1;
+  const sc = {}; flop.forEach(c => sc[c.s] = (sc[c.s] || 0) + 1); const maxS = Math.max(...Object.values(sc));
+  t.monotone = maxS === 3; t.twoTone = maxS === 2; t.rainbow = maxS === 1;
+  let span = 99;
+  if (distinct.length === 3) { const v1 = distinct; span = v1[0] - v1[2]; if (v1[0] === 14) span = Math.min(span, v1[1] - 1); }
+  else if (distinct.length === 2) { span = distinct[0] - distinct[1]; if (distinct[0] === 14) span = Math.min(span, distinct[1] - 1); }
+  t.connect = distinct.length === 2 ? (span <= 1 ? 1 : 0) : span <= 2 ? 3 : span <= 4 ? 2 : (distinct[0] - distinct[1] <= 2 || distinct[1] - distinct[2] <= 2) ? 1 : 0;
+  t.wet = (t.monotone ? 2 : t.twoTone ? 1 : 0) + t.connect;
+  if (t.trips) { t.favor = 'neutral'; }
+  else if (t.highCat === 'A' || t.highCat === 'K') t.favor = t.wet >= 3 ? 'neutral' : 'pfr';
+  else if (t.highCat === 'Q' || t.highCat === 'J') t.favor = t.wet >= 3 ? 'caller' : 'neutral';
+  else t.favor = t.paired ? 'neutral' : 'caller';
+  // full board info
+  const suitsAll = {}; board.forEach(c => suitsAll[c.s] = (suitsAll[c.s] || 0) + 1);
+  t.flushPossible = Math.max(...Object.values(suitsAll)) >= 3;
+  const setAll = new Set(board.map(c => RV[c.r])); if (setAll.has(14)) setAll.add(1);
+  let four = false; { const arr = [...setAll].sort((a, b) => a - b); for (let i = 0; i + 3 < arr.length; i++) if (arr[i + 3] - arr[i] <= 4) four = true; }
+  t.fourStraight = four;
+  t.scary = t.flushPossible || four;
+  t.desc = descTexture(t, flop);
+  return t;
+}
+function descTexture(t, flop) {
+  const parts = [];
+  parts.push(t.trips ? 'trips on board' : t.paired ? 'paired, ' + (t.highCat === 'low' ? 'low' : RANK_WORD[RN[t.high]] + '-high') : (t.highCat === 'low' ? 'low' : RANK_WORD[RN[t.high]] + '-high'));
+  parts.push(t.monotone ? 'monotone' : t.twoTone ? 'two-tone' : 'rainbow');
+  parts.push(t.connect >= 2 ? 'connected' : t.connect === 1 ? 'semi-connected' : 'disconnected');
+  parts.push(t.wet >= 3 ? 'wet' : t.wet <= 1 ? 'dry' : 'medium texture');
+  return parts.join(', ');
+}
+
+/* ---------- preflop scenario generation ---------- */
+function blindOf(sc, idx) { const lab = TABLES[sc.n][idx]; if (lab === 'SB') return 0.5; if (lab === 'BB') return 1; if (sc.straddle && idx === 0) return 2; return 0; }
+function blindsTotal(sc) { return 1.5 + (sc.straddle ? 2 : 0); }
+function prank(sc, idx) { const lab = TABLES[sc.n][idx]; if (lab === 'SB') return 0; if (lab === 'BB') return 1; if (sc.straddle && idx === 0) return 2; return 3 + idx; }
+function rangeKeyS(sc, idx) { const labels = TABLES[sc.n]; const lab = labels[idx]; if (lab === 'SB') return 'SB'; if (lab === 'BB') return sc.straddle ? 'SB' : 'BB'; if (sc.straddle && idx === 0) return 'BB'; return BEHIND_KEY[Math.min(5, labels.indexOf('BTN') - idx + (sc.straddle ? 1 : 0))]; }
+function actingOrder(sc) { const o = []; for (let i = 0; i < sc.n; i++) o.push(i); return sc.straddle ? o.slice(1).concat([0]) : o; }
+function seatName(sc, idx) { const lab = TABLES[sc.n][idx]; return (sc.straddle && idx === 0) ? 'straddle' : lab === 'BB' ? 'big blind' : lab === 'SB' ? 'small blind' : lab; }
+function vsOpenTable(heroTbl, oBucket) { if (heroTbl === 'SB' && oBucket === 'SB') return VS_OPEN.BB.SB; return VS_OPEN[heroTbl][oBucket]; }
+function pickStraddle(rng, opt) { return opt.straddle === 'on' ? true : opt.straddle === 'mix' ? rng() < 0.4 : false; }
+
+function genPre(rng, opt) {
+  const n = opt.table === 'mix' ? weighted(rng, [[6, 0.5], [8, 0.3], [4, 0.2]]) : +opt.table;
+  const stack = opt.stack === 'mix' ? weighted(rng, [[100, 0.6], [40, 0.25], [200, 0.15]]) : +opt.stack;
+  const labels = TABLES[n];
+  const profile = opt.profile || 'unknown';
+  const straddle = pickStraddle(rng, opt); const u = straddle ? 2 : 1;
+  let type = opt.type || weighted(rng, [['rfi', 0.28], ['vsOpen', 0.34], ['vs3bet', 0.14], ['vs4bet', 0.05], ['squeeze', 0.08], ['vsLimp', 0.11]]);
+  if (profile !== 'unknown' && !opt.type) type = weighted(rng, [['rfi', 0.12], ['vsOpen', 0.42], ['vs3bet', 0.14], ['vs4bet', 0.06], ['squeeze', 0.10], ['vsLimp', 0.16]]);
+  const sc = { kind: 'pre', type, n, stack, profile, straddle, u, depth: Math.round(stack / u), seats: labels.map((l, i) => ({ label: l, idx: i, stack, state: 'pending', act: '' })), villains: [], history: [] };
+  sc.short = sc.depth <= 45; sc.deep = sc.depth >= 150;
+  const S = sc.seats; const order = actingOrder(sc); const opOf = (idx) => order.indexOf(idx);
+  if (straddle) { S[0].act = 'straddle 2'; sc.history.push(labels[0] + ' straddles to 2bb'); }
+  const openSize = (idx) => r05((labels[idx] === 'SB' || (labels[idx] === 'BB' && straddle) ? 3 : 2.5) * u);
+  const foldBefore = (heroOp, keep) => S.forEach(s => { const op = opOf(s.idx); if (op < heroOp && !keep.includes(s.idx)) { s.state = 'folded'; s.act = 'fold'; } });
+  const foldAllBut = (keep) => S.forEach(s => { if (!keep.includes(s.idx)) { s.state = 'folded'; s.act = 'fold'; } });
+  let cls = null;
+  switch (type) {
+    case 'rfi': {
+      const heroOp = Math.floor(rng() * (n - 1)); const heroIdx = order[heroOp];
+      sc.heroIdx = heroIdx; foldBefore(heroOp, []);
+      sc.heroKey = rangeKeyS(sc, heroIdx); sc.pot = blindsTotal(sc); sc.toCall = u - blindOf(sc, heroIdx);
+      const rs = openSize(heroIdx); sc.raiseTo = rs;
+      sc.actions = [{ id: 'fold', label: 'Fold' }, { id: 'limp', label: sc.heroKey === 'SB' ? 'Limp (complete ' + fmtBB(sc.toCall) + 'bb)' : 'Limp' }, { id: 'raise', label: 'Raise to ' + fmtBB(rs) + 'bb' }];
+      break;
+    }
+    case 'vsOpen': {
+      const openerOp = Math.floor(rng() * (n - 2)); const heroOp = openerOp + 1 + Math.floor(rng() * (n - 1 - openerOp));
+      const openerIdx = order[openerOp], heroIdx = order[Math.min(heroOp, n - 1)];
+      sc.heroIdx = heroIdx; sc.openerIdx = openerIdx; sc.villains = [openerIdx];
+      const rs = openSize(openerIdx); S[openerIdx].state = 'raised'; S[openerIdx].act = 'raise ' + fmtBB(rs); S[openerIdx].profile = profile;
+      foldBefore(opOf(heroIdx), [openerIdx]);
+      sc.heroKey = rangeKeyS(sc, heroIdx); sc.openerKey = rangeKeyS(sc, openerIdx);
+      sc.heroTbl = sc.heroKey === 'SB' ? 'SB' : sc.heroKey === 'BB' ? 'BB' : 'IP'; sc.oBucket = bucket(sc.openerKey); sc.tbl = vsOpenTable(sc.heroTbl, sc.oBucket);
+      sc.heroIP = prank(sc, heroIdx) > prank(sc, openerIdx);
+      sc.pot = rs + blindsTotal(sc) - blindOf(sc, openerIdx); sc.toCall = rs - blindOf(sc, heroIdx);
+      sc.raiseTo = r05(rs * (sc.heroTbl === 'IP' ? 3 : sc.heroTbl === 'SB' ? 4 : (sc.oBucket === 'SB' ? 3.4 : 3.6)));
+      sc.history.push(seatName(sc, openerIdx) + ' raises to ' + fmtBB(rs) + 'bb');
+      sc.actions = [{ id: 'fold', label: 'Fold' }, { id: 'call', label: 'Call ' + fmtBB(sc.toCall) + 'bb' }, { id: 'raise', label: '3-bet to ' + fmtBB(sc.raiseTo) + 'bb' }];
+      { const x = rng(); if (x < 0.55) cls = sampleClass(rng, unionR(sc.tbl.v, sc.tbl.b, sc.tbl.c)); else if (x < 0.85) cls = sampleClass(rng, PLAYABLE); }
+      break;
+    }
+    case 'vs3bet': {
+      const heroOp = Math.floor(rng() * (n - 2)); const tOp = heroOp + 1 + Math.floor(rng() * (n - 1 - heroOp));
+      const heroIdx = order[heroOp], tIdx = order[Math.min(tOp, n - 1)];
+      sc.heroIdx = heroIdx; sc.threeIdx = tIdx; sc.villains = [tIdx];
+      const rs = openSize(heroIdx); sc.heroKey = rangeKeyS(sc, heroIdx); sc.threeKey = rangeKeyS(sc, tIdx);
+      sc.threeIP = prank(sc, tIdx) > prank(sc, heroIdx);
+      sc.threeTbl = sc.threeKey === 'SB' ? 'SB' : sc.threeKey === 'BB' ? 'BB' : 'IP';
+      const threeTo = r05(sc.threeIP ? rs * 3 : rs * 4);
+      S[heroIdx].act = 'raise ' + fmtBB(rs); S[tIdx].state = 'raised'; S[tIdx].act = '3-bet ' + fmtBB(threeTo); S[tIdx].profile = profile;
+      foldAllBut([heroIdx, tIdx]);
+      sc.threeTo = threeTo; sc.pot = rs + threeTo + blindsTotal(sc) - blindOf(sc, heroIdx) - blindOf(sc, tIdx); sc.toCall = threeTo - rs;
+      sc.raiseTo = sc.short ? stack : r05(sc.threeIP ? threeTo * 2.3 : threeTo * 2.4);
+      sc.tbl = VS_3BET[bucket(sc.heroKey)][sc.threeIP ? 'IP' : 'OOP'];
+      sc.history.push('You raise to ' + fmtBB(rs) + 'bb', seatName(sc, tIdx) + ' 3-bets to ' + fmtBB(threeTo) + 'bb', 'everyone else folds');
+      sc.actions = [{ id: 'fold', label: 'Fold' }, { id: 'call', label: 'Call ' + fmtBB(sc.toCall) + 'bb' }, { id: 'raise', label: sc.short ? 'All-in (' + stack + 'bb)' : '4-bet to ' + fmtBB(sc.raiseTo) + 'bb' }];
+      cls = sampleClass(rng, parseRange(RFI[sc.heroKey]));
+      break;
+    }
+    case 'vs4bet': {
+      const openerOp = Math.floor(rng() * (n - 2)); const heroOp = openerOp + 1 + Math.floor(rng() * (n - 1 - openerOp));
+      const openerIdx = order[openerOp], heroIdx = order[Math.min(heroOp, n - 1)];
+      sc.heroIdx = heroIdx; sc.openerIdx = openerIdx; sc.villains = [openerIdx];
+      const rs = openSize(openerIdx); sc.heroKey = rangeKeyS(sc, heroIdx); sc.openerKey = rangeKeyS(sc, openerIdx);
+      sc.heroTbl = sc.heroKey === 'SB' ? 'SB' : sc.heroKey === 'BB' ? 'BB' : 'IP'; sc.oBucket = bucket(sc.openerKey);
+      sc.heroIP = prank(sc, heroIdx) > prank(sc, openerIdx);
+      const tbl = vsOpenTable(sc.heroTbl, sc.oBucket);
+      const threeTo = r05(rs * (sc.heroTbl === 'IP' ? 3 : sc.heroTbl === 'SB' ? 4 : (sc.oBucket === 'SB' ? 3.4 : 3.6)));
+      const fourTo = sc.short ? stack : r05(sc.heroIP ? threeTo * 2.4 : threeTo * 2.3);
+      S[openerIdx].state = 'raised'; S[openerIdx].act = '4-bet ' + (sc.short ? 'all-in' : fmtBB(fourTo)); S[openerIdx].profile = profile; S[heroIdx].act = '3-bet ' + fmtBB(threeTo);
+      foldAllBut([heroIdx, openerIdx]);
+      cls = sampleClass(rng, unionR(tbl.v, tbl.b));
+      sc.threeTo = threeTo; sc.fourTo = fourTo; sc.pot = threeTo + fourTo + blindsTotal(sc) - blindOf(sc, heroIdx) - blindOf(sc, openerIdx); sc.toCall = fourTo - threeTo;
+      sc.tbl = VS_4BET[sc.heroIP ? 'IP' : 'OOP']; sc.villTbl = VS_3BET[sc.oBucket][sc.heroIP ? 'IP' : 'OOP'];
+      sc.history.push(seatName(sc, openerIdx) + ' raises to ' + fmtBB(rs) + 'bb', 'You 3-bet to ' + fmtBB(threeTo) + 'bb', seatName(sc, openerIdx) + (sc.short ? ' 4-bets all-in' : ' 4-bets to ' + fmtBB(fourTo) + 'bb'));
+      sc.actions = [{ id: 'fold', label: 'Fold' }, { id: 'call', label: 'Call ' + fmtBB(sc.toCall) + 'bb' }];
+      if (!sc.short) sc.actions.push({ id: 'allin', label: 'All-in (' + stack + 'bb)' });
+      break;
+    }
+    case 'squeeze': {
+      const openerOp = Math.floor(rng() * (n - 3)); const callerOp = openerOp + 1 + Math.floor(rng() * (n - 2 - openerOp)); const heroOp = Math.min(callerOp + 1 + Math.floor(rng() * (n - 1 - callerOp)), n - 1);
+      const openerIdx = order[openerOp], callerIdx = order[callerOp], heroIdx = order[heroOp];
+      sc.heroIdx = heroIdx; sc.openerIdx = openerIdx; sc.callerIdx = callerIdx; sc.villains = [openerIdx, callerIdx];
+      const rs = openSize(openerIdx);
+      S[openerIdx].state = 'raised'; S[openerIdx].act = 'raise ' + fmtBB(rs); S[openerIdx].profile = profile;
+      S[callerIdx].state = 'called'; S[callerIdx].act = 'call'; S[callerIdx].profile = profile;
+      foldBefore(heroOp, [openerIdx, callerIdx]);
+      sc.heroKey = rangeKeyS(sc, heroIdx); sc.openerKey = rangeKeyS(sc, openerIdx); sc.callerKey = rangeKeyS(sc, callerIdx);
+      sc.heroTbl = (sc.heroKey === 'SB' || sc.heroKey === 'BB') ? 'OOP' : 'IP'; sc.oBucket = bucket(sc.openerKey); sc.tbl = SQUEEZE[sc.heroTbl];
+      sc.callerTbl = sc.callerKey === 'SB' ? 'SB' : sc.callerKey === 'BB' ? 'BB' : 'IP';
+      sc.pot = rs * 2 + blindsTotal(sc) - blindOf(sc, openerIdx) - blindOf(sc, callerIdx); sc.toCall = rs - blindOf(sc, heroIdx); sc.raiseTo = r05(rs * 5 + (sc.heroTbl === 'OOP' ? 1.5 * u : 0));
+      sc.history.push(seatName(sc, openerIdx) + ' raises to ' + fmtBB(rs) + 'bb', seatName(sc, callerIdx) + ' calls');
+      sc.actions = [{ id: 'fold', label: 'Fold' }, { id: 'call', label: 'Call ' + fmtBB(sc.toCall) + 'bb' }, { id: 'raise', label: 'Squeeze to ' + fmtBB(sc.raiseTo) + 'bb' }];
+      { const x = rng(); if (x < 0.55) cls = sampleClass(rng, unionR(sc.tbl.v, sc.tbl.b, sc.tbl.c)); else if (x < 0.85) cls = sampleClass(rng, PLAYABLE); }
+      break;
+    }
+    case 'vsLimp': {
+      const nl = n >= 6 ? weighted(rng, [[1, 0.55], [2, 0.45]]) : 1;
+      const firstOp = Math.floor(rng() * (n - 2 - nl)); const ops = [firstOp]; if (nl === 2) ops.push(firstOp + 1 + Math.floor(rng() * (n - 3 - firstOp)));
+      const lastOp = ops[ops.length - 1]; const heroOp = Math.min(lastOp + 1 + Math.floor(rng() * (n - 1 - lastOp)), n - 1);
+      const limpers = ops.map(o => order[o]); const heroIdx = order[heroOp];
+      sc.heroIdx = heroIdx; sc.limpers = limpers; sc.villains = limpers;
+      limpers.forEach(i => { S[i].state = 'called'; S[i].act = 'limp'; S[i].profile = profile; });
+      foldBefore(heroOp, limpers);
+      sc.heroKey = rangeKeyS(sc, heroIdx); sc.heroTbl = sc.heroKey === 'SB' ? 'SB' : sc.heroKey === 'BB' ? 'BB' : 'IP'; sc.tbl = VS_LIMP[sc.heroTbl];
+      sc.pot = nl * u + blindsTotal(sc); sc.toCall = u - blindOf(sc, heroIdx); sc.nl = nl; sc.raiseTo = u * (4 + nl);
+      sc.history.push(limpers.map(i => seatName(sc, i)).join(' and ') + (nl > 1 ? ' limp' : ' limps') + (straddle ? ' for 2bb' : ''));
+      sc.actions = sc.heroTbl === 'BB' ? [{ id: 'check', label: 'Check' }, { id: 'raise', label: 'Raise to ' + sc.raiseTo + 'bb' }]
+        : [{ id: 'fold', label: 'Fold' }, { id: 'limp', label: sc.heroTbl === 'SB' ? 'Complete (' + fmtBB(sc.toCall) + 'bb)' : 'Limp behind' }, { id: 'raise', label: 'Raise to ' + sc.raiseTo + 'bb' }];
+      break;
+    }
+  }
+  if (!cls) cls = sampleClass(rng, null);
+  sc.cls = cls; sc.hand = cardsFor(rng, cls); sc.tags = handTags(cls);
+  S[sc.heroIdx].state = 'hero';
+  sc.gto = preGto(sc);
+  sc.exploit = preExploit(sc, sc.gto);
+  sc.title = preTitle(sc);
+  return sc;
+}
+
+function preTitle(sc) {
+  const L = (sc.straddle && sc.heroIdx === 0) ? 'straddle' : (sc.straddle && TABLES[sc.n][sc.heroIdx] === 'BB') ? 'BB (straddle behind)' : TABLES[sc.n][sc.heroIdx];
+  switch (sc.type) {
+    case 'rfi': return 'Folded to you in the ' + L;
+    case 'vsOpen': return 'Facing a raise in the ' + L;
+    case 'vs3bet': return 'You opened, facing a 3-bet';
+    case 'vs4bet': return 'You 3-bet, facing a 4-bet';
+    case 'squeeze': return 'Raise and a call in front of you';
+    case 'vsLimp': return (sc.nl > 1 ? 'Two limpers' : 'One limper') + ' in front of you';
+  }
+  return '';
+}
+
+function preGto(sc) {
+  const cls = sc.cls, t = sc.tags, stk = sc.stack; const g = { ok: [], note: '', mixed: false };
+  const set = (best, ok, note) => { g.best = best; g.ok = [best].concat(ok || []); g.note = note; if (g.ok.length > 1) g.mixed = true; return g; };
+  const hn = handName(cls);
+  switch (sc.type) {
+    case 'rfi': {
+      const key = sc.heroKey, pos = posName(sc.n, sc.heroIdx), pct = rangePct(RFI[key]);
+      if (inR(RFI[key], cls)) {
+        let why = 'inside the ' + pos + ' opening range (~' + pct + '% of hands).';
+        if (t.pair && t.pairTier === 'small') why += ' Small pairs open for set value and play fine multiway.';
+        else if (t.connector || t.gapper) why += ' Suited connectors and gappers open because they realise equity well and are rarely dominated.';
+        else if (t.wheelAce) why += ' Suited wheel aces open for flush and wheel potential plus the ace blocker.';
+        else if (t.offBroadway) why += ' Offsuit broadways make top pair often enough from here; they are the first hands to drop from earlier seats.';
+        return set('raise', [], hn + ' is ' + why + ' Limping is never part of the baseline: raise or fold.');
+      }
+      const first = firstOpenKey(cls);
+      let why = 'outside the ' + pos + ' opening range.';
+      if (t.offBroadway || (t.offAce && RV[cls[1]] >= 9)) why += ' Offsuit broadways and weak offsuit aces are dominated by the hands that continue against an early raise and make second-best top pairs.';
+      else if (t.offAce) why += ' Weak offsuit aces flop dominated pairs and have no flush potential.';
+      else if (t.gapper || t.connector) why += ' Suited hands this low need more players behind to fold first; they become opens later.';
+      else if (!t.suited && !t.pair) why += ' Offsuit hands this weak lose money from every seat.';
+      else if (t.suited && RV[cls[0]] <= 11) why += ' Suited junk still loses postflop from an early seat.';
+      if (first) why += ' It becomes an open from the ' + KEY_NAME[first] + (first === 'LJ' || first === 'UTG1' ? ' seat' : '') + '.';
+      return set('fold', [], hn + ' is ' + why);
+    }
+    case 'vsOpen': {
+      const tbl = sc.tbl; const ob = BUCKET_NAME[sc.oBucket]; const pos = TABLES[sc.n][sc.heroIdx];
+      const heroLab = TABLES[sc.n][sc.heroIdx];
+      const posNote = sc.heroTbl === 'IP' ? ' In position you can call more, because you close the action less often but realise equity better.' : sc.heroTbl === 'SB' ? (sc.straddle && heroLab === 'BB' ? ' With a straddle still to act behind you, the big blind plays like a small blind: mostly 3-bet or fold.' : ' The small blind mostly 3-bets or folds: calling invites a big blind squeeze and leaves you out of position.') : ' The ' + seatName(sc, sc.heroIdx) + ' defends widest: you already have ' + fmtBB(blindOf(sc, sc.heroIdx)) + 'bb in and close the action.';
+      if (inR(tbl.v, cls)) {
+        if (sc.deep && (cls === 'JJ' || cls === 'TT' || cls === 'AQo' || cls === 'KQs')) return set('raise', ['call'], hn + ' is a value 3-bet against ' + ob + ' open, but this deep calling is also fine: the hand plays a bloated pot badly when it gets 4-bet.');
+        return set('raise', [], hn + ' is a value 3-bet against ' + ob + ' open: it dominates most of the hands that continue and builds the pot while ahead.' + (sc.short ? ' Short-stacked, this 3-bet effectively commits you; be ready to call a jam.' : ''));
+      }
+      if (inR(tbl.b, cls)) {
+        if (sc.short && !t.wheelAce) return set('fold', ['raise'], hn + ' is a 3-bet bluff at full depth, but short stacks kill bluff 3-bets: a jam over the top puts you in a dead spot. Fold, or 3-bet only with the blocker aces.');
+        const why = t.wheelAce ? 'the ace blocks AA/AK, it flops flushes and wheels when called, and it is too weak to call profitably.' : 'it blocks the strongest continues, has good playability when called, and is not quite good enough to flat.';
+        return set('raise', sc.heroTbl === 'BB' && sc.oBucket !== 'EP' ? ['call'] : [], hn + ' is a 3-bet bluff here: ' + why + (sc.heroTbl === 'BB' && sc.oBucket !== 'EP' ? ' Solvers mix it with calls from the big blind.' : ''));
+      }
+      if (inR(tbl.c, cls)) {
+        if (sc.short && inR(SPEC_HANDS, cls)) return set('fold', ['call'], hn + ' calls at full depth for implied odds, but at ' + sc.depth + ' big blinds effective the stacks are too shallow to get paid on sets, straights and flushes. Fold it short.');
+        let why = 'strong enough to continue but not to 3-bet for value.';
+        if (t.pair && t.pairTier === 'small') why = 'a set-mine: you need roughly 15 times the call behind to make it profitable, which these stacks give you.';
+        else if (t.connector || t.gapper || (t.suitedAce && !t.wheelAce)) why = 'a speculative call: it makes strong disguised hands and is not dominated by the opening range.';
+        else if (t.suitedBroadway) why = 'a suited broadway that calls: it flops strong pairs and draws, and folds cleanly when it misses.';
+        else if (cls === 'AQo' || cls === 'AJo' || cls === 'KQo') why = 'a call: too much equity to fold, but 3-betting it turns a hand that dominates the opening range into one that only gets action from AK and big pairs.';
+        else if (t.offBroadway || t.offAce) why = 'a marginal call: it is playable against a wider late open but would be a fold against a tight early one.';
+        return set('call', [], hn + ' is ' + why + posNote);
+      }
+      let why = 'a fold against ' + ob + ' open.';
+      if (t.offBroadway || (t.offAce && RV[cls[1]] >= 9)) why += ' It is dominated by the hands that raised and continues badly out of position or against a 3-bet.';
+      else if (t.offAce) why += ' Weak offsuit aces are the classic dominated hand: they make second-best pairs.';
+      else if (t.suited) why += ' Suited hands this weak do not have enough playability without being the aggressor.';
+      else why += ' Offsuit junk never has the equity to call a raise.';
+      return set('fold', [], hn + ' is ' + why);
+    }
+    case 'vs3bet': {
+      const tbl = sc.tbl;
+      if (inR(tbl.v, cls)) return set('raise', sc.deep && cls !== 'AA' ? ['call'] : [], hn + ' 4-bets for value: it is ahead of the 3-betting range and wants the money in now.' + (sc.short ? ' Short, this is simply a jam.' : sc.deep ? ' Deep, flatting to keep the bluffs in is also fine.' : ''));
+      if (inR(tbl.b, cls)) return set('raise', ['fold'], hn + ' is a 4-bet bluff: the ace blocks AA and AK, and it has almost no value as a call. Fold is the safe alternative.' + (sc.short ? ' Do not 4-bet bluff short-stacked; just fold.' : ''));
+      if (inR(tbl.c, cls)) {
+        if (sc.short && inR(SPEC_HANDS, cls)) return set('fold', [], hn + ' calls a 3-bet at full depth, but short-stacked there is no room to set-mine or draw. Fold.');
+        let why = 'calls the 3-bet: it plays well enough postflop and is too strong to fold, but 4-betting only gets action from better hands.';
+        if (t.pair) why = 'calls the 3-bet: pairs realise equity well and set-mine against a range full of overcards.';
+        return set('call', [], hn + ' ' + why + (sc.threeIP ? ' You will be out of position, so keep the pot controlled.' : ' You are in position, which makes the call much better.'));
+      }
+      return set('fold', [], hn + ' folds to the 3-bet: it is dominated by the 3-betting range and would only see a flop by putting in a large chunk of stack behind.');
+    }
+    case 'vs4bet': {
+      const tbl = sc.tbl;
+      if (sc.short) { if (inR('QQ+, AKs, AKo', cls)) return set('call', [], hn + ' calls the jam: against a 4-bet all-in range of about 8-9% you are ahead or flipping with the right price.'); return set('fold', [], hn + ' folds to the 4-bet jam: it was a bluff or a marginal 3-bet, and the all-in range crushes it.'); }
+      if (inR(tbl.jam, cls)) return set('allin', [], hn + ' 5-bets all-in: the 4-bet has already put a quarter of the stack in and this hand is the top of your range.');
+      if (inR(tbl.call, cls)) return set('call', [], hn + ' calls the 4-bet: it is too strong to fold but not strong enough to jam, and it plays well at the resulting low stack-to-pot ratio.');
+      return set('fold', [], hn + ' folds to the 4-bet: it was a 3-bet bluff or a marginal value hand and the 4-bet range is stronger.');
+    }
+    case 'squeeze': {
+      const tbl = sc.tbl;
+      if (inR(tbl.v, cls)) return set('raise', [], hn + ' squeezes for value: with a raiser and a caller there is dead money in the pot, and both are likely to continue with worse.');
+      if (inR(tbl.b, cls)) return set('raise', ['call', 'fold'], hn + ' is a squeeze bluff: the ace blocker and playability make it the best candidate. It is a mixed spot; calling for the multiway pot is also acceptable.');
+      if (inR(tbl.c, cls)) {
+        if (sc.short && inR(SPEC_HANDS, cls)) return set('fold', [], hn + ' would call for the multiway implied odds at full depth, but short-stacked they are not there. Fold.');
+        return set('call', [], hn + ' calls: a multiway pot with a raiser and a caller gives excellent implied odds to pairs, suited connectors and suited aces.');
+      }
+      return set('fold', [], hn + ' folds: it is not strong enough to squeeze and does not have the implied odds to call into a raise plus a caller.');
+    }
+    case 'vsLimp': {
+      const tbl = sc.tbl;
+      const base = 'Solvers do not model limps, so this is the standard sound default: raise to punish limps with a bigger size (4bb plus 1bb per limper), overlimp only the hands that want a cheap multiway pot.';
+      if (sc.heroTbl === 'BB') { if (inR(tbl.r, cls)) return set('raise', [], hn + ' raises over the limpers from the big blind: it is strong enough to play a big pot out of position and the limpers have capped ranges. ' + base); return set('check', [], hn + ' checks its option: a free flop with a capped range against you is worth more than building a pot out of position. ' + base); }
+      if (sc.heroTbl === 'SB') { if (inR(tbl.r, cls)) return set('raise', [], hn + ' raises from the small blind against limpers: it is a value raise against capped ranges. ' + base); if (inR(tbl.l, cls)) return set('limp', ['fold'], hn + ' completes for half a bet: pairs, suited aces and suited connectors want the cheap multiway flop. ' + base); return set('fold', [], hn + ' folds even for half a bet: out of position against several players it will not realise its equity. ' + base); }
+      const rr = sc.nl > 1 ? tbl.r2 : tbl.r1;
+      if (inR(rr, cls)) return set('raise', [], hn + ' isolates the limper' + (sc.nl > 1 ? 's' : '') + ': raise big so you play a bloated pot in position against capped ranges. ' + base);
+      if (inR(tbl.l, cls)) return set('limp', ['raise'], hn + ' overlimps: it wants a cheap multiway pot in position, and raising it just builds a pot with a hand that needs to hit. ' + base);
+      return set('fold', [], hn + ' folds: even against limpers, junk that cannot make the nuts or win at showdown is a fold. ' + base);
+    }
+  }
+  return set('fold', [], '');
+}
+
+function preExploit(sc, gto) {
+  const p = sc.profile; if (!p || p === 'unknown') return null;
+  const cls = sc.cls, t = sc.tags, stk = sc.stack; const hn = handName(cls);
+  const mk = (best, note, ok) => ({ best, ok: [best].concat(ok || []), note });
+  const isVal3 = ['QQ', 'KK', 'AA', 'AKs', 'AKo'].includes(cls);
+  switch (sc.type) {
+    case 'vsOpen': {
+      if (p === 'nit') {
+        if (gto.best === 'raise' && !isVal3) return mk(inR('JJ, TT, AQs, AQo', cls) && sc.heroTbl !== 'SB' ? 'call' : 'fold', 'A tight opener has a 10-15% range, so ' + hn + ' is no longer a good 3-bet: he only continues with hands that beat it. Only QQ+ and AK 3-bet for value; bluff 3-bets go in the bin.');
+        if (gto.best === 'call' && inR(DOMINATED_VS_TIGHT, cls)) return mk('fold', hn + ' is exactly the hand a tight range dominates: when you flop top pair he has a better kicker or an overpair. Fold it against a nit.');
+        if (gto.best === 'call' && t.pair && t.pairTier === 'small') return mk(!sc.short ? 'call' : 'fold', !sc.short ? 'Set-mining is best against a tight range: his big pairs pay off your sets. Keep calling with pairs when the stacks are 15x the call or more.' : 'Set-mining against a nit needs deep stacks; short-stacked there is nothing to win. Fold.');
+        if (gto.best === 'fold' && t.pair && t.pairTier === 'small' && !sc.short) return mk('call', 'Against a tight opener small pairs become a call even where the baseline folds: his range is full of big pairs that will pay off a set.');
+      }
+      if (p === 'station' || p === 'tilt') {
+        if (gto.best === 'raise' && !isVal3) return mk(t.wheelAce || t.gapper || t.connector ? 'call' : 'raise', hn + (t.wheelAce || t.gapper || t.connector ? ' is a 3-bet bluff at baseline, but a loose-passive player does not fold to 3-bets, so bluffing is pointless. Call and play the flop instead.' : ' 3-bets for value against a loose opener: he calls with far worse and plays badly postflop. Make it bigger, around 4x.'));
+        if (gto.best === 'call' && inR('TT, JJ, AQo, AJs, KQs, AQs', cls)) return mk('raise', 'A loose opener calls 3-bets with junk, so ' + hn + ' moves up from a call to a value 3-bet. Size it bigger (4x) since he is not price sensitive.');
+        if (gto.best === 'fold' && (t.connector || t.gapper || (t.pair && t.pairTier === 'small') || t.suitedAce) && !sc.short) return mk('call', 'Against a station your implied odds go up: ' + hn + ' can call because he pays off big hands and rarely 3-bets you off it.');
+      }
+      if (p === 'maniac') {
+        if (gto.best === 'raise' && !isVal3 && (t.wheelAce || t.gapper || t.connector || cls === 'K9s' || cls === 'K8s' || cls === 'Q9s' || cls === 'KTs' || cls === 'QTs')) return mk('fold', 'Never 3-bet bluff a maniac: he 4-bets or calls and you are left with ' + hn + ' out of your depth. Fold it and wait for a value hand.', ['call']);
+        if (gto.best === 'call' && inR('99, TT, JJ, AJs, AQs, AQo, KQs', cls)) return mk('raise', 'A maniac opens 40%+ of hands, so ' + hn + ' is well ahead of his range: 3-bet for value and let him do the rest.');
+        if (gto.best === 'call' && (t.offBroadway || t.offAce) && sc.heroTbl !== 'IP') return mk('fold', 'Out of position against a maniac, ' + hn + ' faces three streets of pressure with a one-pair hand. Fold it and pick better spots.');
+      }
+      break;
+    }
+    case 'vs3bet': {
+      if (p === 'nit' || p === 'station') {
+        const who = p === 'nit' ? 'A tight player' : 'A passive player';
+        if (gto.best === 'raise' && !inR('KK, AA', cls)) return mk(inR('QQ, AKs, AKo', cls) ? 'call' : 'fold', who + ' 3-bets only QQ+ and AK, so ' + hn + ' should not 4-bet: only KK and AA are ahead. ' + (inR('QQ, AKs, AKo', cls) ? 'Call and play carefully.' : 'Fold.'));
+        if (gto.best === 'call' && !inR('QQ, JJ, AKs, AKo', cls) && !(t.pair && sc.deep)) return mk('fold', who + '\'s 3-bet is the top of the deck. ' + hn + ' is dominated or drawing thin, so fold and save the stack.' + (t.pair ? ' Set-mining only works here if you are very deep.' : ''));
+      }
+      if (p === 'maniac' || p === 'tilt') {
+        if (gto.best === 'call' && inR('JJ, TT, AQs, AQo, AKo, KQs', cls)) return mk('raise', 'A maniac 3-bets a wide range with lots of bluffs; ' + hn + ' is ahead of it, so 4-bet for value instead of calling out of position.');
+        if (gto.best === 'fold' && (t.suitedBroadway || (t.pair && t.pairTier === 'medium'))) return mk('call', 'His 3-bets are too wide to fold ' + hn + '. Call and let him keep bluffing on the flop.');
+      }
+      break;
+    }
+    case 'vs4bet': {
+      if (p === 'nit' || p === 'station') {
+        if (gto.best !== 'fold' && !inR('KK, AA', cls) && !sc.short) return mk(inR('AKs', cls) ? 'call' : 'fold', 'A tight player\'s 4-bet is AA/KK and occasionally AK. ' + hn + ' is crushed, so fold (or take a flop cheaply with AKs).');
+      }
+      if (p === 'maniac' || p === 'tilt') {
+        if (gto.best === 'call' && inR('QQ, AKo, JJ', cls) && !sc.short) return mk('allin', 'A maniac 4-bets with air and medium hands; ' + hn + ' is way ahead. Jam and get the money in.');
+        if (gto.best === 'fold' && inR('TT, AQs, AQo, KQs', cls) && !sc.short) return mk('call', 'Against a maniac ' + hn + ' can call the 4-bet: his range is too wide to fold a hand this strong.');
+      }
+      break;
+    }
+    case 'rfi': {
+      if (p === 'station' && gto.best === 'raise' && (t.offBroadway || (t.offAce && RV[cls[1]] <= 11)) && ['LJ', 'HJ', 'UTG1', 'UTG'].includes(sc.heroKey)) return mk('fold', 'At a table of callers you will be 3-4 way every hand. ' + hn + ' makes dominated top pairs multiway; skip it from early seats and open bigger (3.5-4bb) with the hands that play multiway.');
+      if (p === 'station' && gto.best === 'raise') return mk('raise', hn + ' still opens, but size up to 3.5-4bb: callers are not price sensitive and you want to build the pot with hands that play well multiway.');
+      break;
+    }
+    case 'squeeze': {
+      if ((p === 'station' || p === 'tilt') && gto.best === 'raise' && !inR('JJ+, AQs, AKs, AKo', cls)) return mk('call', 'Squeeze bluffs need folds; loose players call. ' + hn + ' should call for the multiway implied odds instead.');
+      if ((p === 'station' || p === 'tilt') && gto.best === 'raise') return mk('raise', 'Squeeze ' + hn + ' bigger, pot-sized: the dead money is real and the callers come along with worse.');
+      if (p === 'nit' && gto.best === 'raise' && !inR('QQ+, AKs, AKo', cls)) return mk('call', 'The raiser is tight, so ' + hn + ' is no longer a squeeze; his range does not fold and it beats you. Call or fold.', ['fold']);
+      break;
+    }
+    case 'vsLimp': {
+      if (p === 'station' || p === 'tilt') {
+        if (gto.best === 'limp' || (gto.best === 'fold' && (t.suitedAce || t.suitedBroadway || (t.offAce && RV[cls[1]] >= 10) || t.pair))) return mk('raise', 'Loose limpers call raises with anything and play badly out of position. Isolate ' + hn + ' with a big raise (5bb plus 1 per limper) and value bet the flop.');
+        if (gto.best === 'raise') return mk('raise', 'Isolate ' + hn + ', and size it up: 5bb plus 1bb per limper. Loose limpers will call and pay you off.');
+      }
+      if (p === 'nit' && gto.best === 'raise' && !inR('77+, ATs+, KJs+, QJs, AJo+, KQo', cls)) return mk(sc.heroTbl === 'BB' ? 'check' : 'limp', 'A tight player who limps is often trapping (limp-raise with AA/KK) or has a small pair. Do not isolate ' + hn + ' light; see a cheap flop instead.', ['fold']);
+      break;
+    }
+  }
+  return null;
+}
+
+/* ---------- postflop ---------- */
+const NODE_INFO = {
+  cbet_ip: { title: 'Flop: you raised, big blind called and checked', facing: false },
+  cbet_oop: { title: 'Flop: you raised, button called, you act first', facing: false },
+  vs_cbet_bb: { title: 'Flop: you called from the big blind, raiser bets', facing: true },
+  vs_cbet_ip: { title: 'Flop: you called in position, raiser bets', facing: true },
+  stab: { title: 'Flop: you called in position, raiser checks', facing: false },
+  cbet_3bp_ip: { title: 'Flop in a 3-bet pot: you 3-bet in position, villain checks', facing: false },
+  cbet_3bp_oop: { title: 'Flop in a 3-bet pot: you 3-bet from the blind, you act first', facing: false },
+  turn_barrel: { title: 'Turn: you c-bet, villain called and checks again', facing: false },
+  turn_vs_barrel: { title: 'Turn: you called the flop, villain bets again', facing: true },
+  river_value: { title: 'River: you bet flop and turn, villain checks', facing: false },
+  river_vs_bet: { title: 'River: you called two streets, villain bets', facing: true },
+  vs_raise: { title: 'Flop: you c-bet, big blind check-raises', facing: true },
+  multiway_cbet: { title: 'Flop, three-way: you raised, both callers check', facing: false },
+  multiway_vs_bet: { title: 'Flop, three-way: raiser bets, one caller behind you', facing: true }
+};
+const SIZE_FRAC = { s: 0.33, m: 0.66, l: 1 };
+const SIZE_NAME = { s: 'a third of the pot', m: 'two-thirds of the pot', l: 'the full pot' };
+const ACT_LABEL = { check: 'Check', bet_s: 'Bet \u2153 pot', bet_m: 'Bet \u2154 pot', bet_l: 'Bet pot', fold: 'Fold', call: 'Call', raise: 'Raise', allin: 'All-in', limp: 'Limp', jam: 'All-in' };
+
+function heroStrat(node, a, tex, ctx) {
+  const t = a.tier; const md = a.made;
+  const R = { ok: [], note: '' };
+  const set = (best, ok, note) => { R.best = best; R.ok = [best].concat(ok || []); R.note = note; return R; };
+  const isTP = /top pair/.test(md), isOP = /overpair/.test(md), isTwo = md === 'two pair';
+  const hd = 'You have ' + a.desc + '. ';
+  const bd = 'The board is ' + tex.desc + '. ';
+  const sz = ctx.sz;
+  switch (node) {
+    case 'cbet_ip': case 'cbet_oop': case 'cbet_3bp_ip': case 'cbet_3bp_oop': case 'multiway_cbet': {
+      const oop = node === 'cbet_oop' || node === 'cbet_3bp_oop', threeBet = node.indexOf('3bp') >= 0, multi = node === 'multiway_cbet';
+      if (multi) {
+        if (t === 'monster') return set('bet_m', ['bet_l'], hd + 'Three-way, bet your strong hands for value and charge the two callers; one pair rarely wins a big pot multiway, so your betting range is value-heavy.');
+        if (t === 'strong') return set(isOP || /top kicker/.test(md) ? 'bet_m' : 'bet_s', isOP ? ['bet_s'] : ['check'], hd + 'Against two opponents you still bet strong top pairs and overpairs, but smaller and with the intention of slowing down if raised.');
+        if (t === 'draw_strong') return set(a.fd && a.fd.nut || a.sd >= 2 && a.fd ? 'bet_m' : 'check', ['check', 'bet_m'], hd + 'Multiway, semi-bluff only with the draws that can make the nuts; weaker draws take the free card.');
+        return set('check', [], hd + 'Multiway c-bets are value-only. Bluffs and medium hands check: someone in a three-way pot usually has a piece, and the pot is not worth fighting for with air.');
+      }
+      if (tex.monotone) {
+        if (t === 'monster') return set('bet_s', ['bet_m'], hd + bd + 'On monotone boards bet small: you keep villain in with worse flushes and pairs while charging the bare high-card flush draws.');
+        if (t === 'draw_strong' && a.fd) return set('bet_s', ['check'], hd + bd + 'A flush draw here bets small: it wins the pot often and keeps your options open. Non-nut draws are happy to check too.');
+        if ((t === 'strong' || t === 'medium') && ctx.heroFlushCard) return set('bet_s', ['check'], hd + bd + 'A pair with a card of the suit bets small for thin value and protection; without the flush card it would check.');
+        return set('check', ['bet_s'], hd + bd + 'Monotone boards favour nobody in particular and most of your range wants a free turn. Check the weak and unpaired hands.');
+      }
+      const rangeBet = tex.favor === 'pfr' || (tex.paired && tex.wet <= 2) || (threeBet && tex.favor !== 'caller');
+      if (rangeBet) {
+        const why = threeBet ? 'In a 3-bet pot the ranges are narrow and the stack-to-pot ratio is low (around 4), so a small bet with almost your whole range is best; overpairs are close to committed.' : 'Ace- or king-high (and paired) dry boards favour the preflop raiser: bet small with your entire range, deny equity and keep every bluff cheap.';
+        if (oop && (t === 'air' || t === 'weak_sdv') && !a.overs) return set('check', ['bet_s'], hd + bd + why + ' Out of position, though, check the weakest air and some showdown value to protect your checking range.');
+        if (t === 'monster') return set('bet_s', ['bet_m'], hd + bd + why + ' Even monsters bet small here to keep villain\'s whole range in.');
+        return set('bet_s', [], hd + bd + why);
+      }
+      if (tex.favor === 'caller' || tex.wet >= 3) {
+        const why = 'Low and connected boards hit the caller\'s range (pairs, connectors, suited stuff) harder than yours: c-bet polarised at a bigger size with strong hands and draws, and check the middle and most air.';
+        if (t === 'monster') return set('bet_m', ['bet_l'], hd + bd + why);
+        if (t === 'strong') return set('bet_m', isOP ? ['bet_l'] : ['check'], hd + bd + why + (isOP ? ' Overpairs bet big for value and protection.' : ' Top pair bets for value but is happy to check sometimes against a strong range.'));
+        if (t === 'draw_strong') return set('bet_m', ['check'], hd + bd + why + ' A strong draw is the ideal semi-bluff: fold equity now, outs when called.');
+        if (t === 'medium') return set('check', ['bet_s'], hd + bd + why + ' Medium hands want to see a turn cheaply and bluff-catch, not bet into a range that hit.');
+        if (t === 'draw_weak') return set('check', ['bet_m'], hd + bd + why + ' A weak draw checks; it can still bluff on good turn cards.');
+        if (t === 'air' && (a.overs === 2 || a.bdfd)) return set('check', ['bet_m'], hd + bd + why + ' Overcards with backdoor equity are the only air worth bluffing here, and only some of the time.');
+        return set('check', [], hd + bd + why + ' Pure air has nothing: give up.');
+      }
+      // neutral
+      const why = 'Middling boards are a high-frequency, small-size c-bet: bet most hands for value or protection, check back the weakest air and some showdown value.';
+      if (oop) {
+        if (t === 'monster' || t === 'strong' || t === 'draw_strong') return set('bet_s', ['bet_m'], hd + bd + why + ' Out of position, keep your bets small and frequent with value and draws.');
+        if (t === 'medium' || t === 'draw_weak') return set('check', ['bet_s'], hd + bd + why + ' Out of position your medium hands check to keep the pot small and protect your checks.');
+        return set('check', [], hd + bd + why + ' Out of position, check the weak hands.');
+      }
+      if (t === 'monster' || t === 'strong' || t === 'draw_strong') return set('bet_s', ['bet_m'], hd + bd + why);
+      if (t === 'medium' || t === 'draw_weak') return set('bet_s', ['check'], hd + bd + why + ' Medium hands and weak draws bet small for protection and a little value; checking is fine too.');
+      if (t === 'weak_sdv') return set('check', ['bet_s'], hd + bd + why + ' A hand with showdown value but no growth prefers the free card.');
+      if (a.overs === 2 || a.bdfd) return set('bet_s', ['check'], hd + bd + why + ' Overcards with backdoor equity make a good cheap bluff.');
+      return set('check', ['bet_s'], hd + bd + why + ' Pure air with no backdoors is the hand to check back.');
+    }
+    case 'stab': {
+      const why = 'When the preflop raiser checks, his range is capped and weak. Take the initiative with value and draws, and bluff more on boards that favour the caller.';
+      if (t === 'monster') return set('bet_m', ['bet_l'], hd + bd + why + ' Bet for value; his checking range still has pairs that call.');
+      if (t === 'strong') return set('bet_m', ['bet_s'], hd + bd + why);
+      if (t === 'draw_strong') return set('bet_m', ['bet_s'], hd + bd + why + ' A strong draw bets: it wins now or has outs.');
+      if (t === 'medium') return set(tex.favor === 'pfr' ? 'bet_s' : 'check', tex.favor === 'pfr' ? ['check'] : ['bet_s'], hd + bd + why + (tex.favor === 'pfr' ? ' On his board a check means he missed, so even second pair bets small for value.' : ' Second pair and weak top pair prefer to check for pot control and a showdown.'));
+      if (t === 'draw_weak') return set('bet_m', ['check'], hd + bd + why + ' A weak draw is a natural semi-bluff against a capped range.');
+      if (t === 'weak_sdv') return set('check', ['bet_s'], hd + bd + why + ' A hand with a little showdown value checks behind.');
+      if (tex.favor === 'caller') return set('bet_m', ['check'], hd + bd + why + ' On a board that favours you, air bluffs when checked to.');
+      return set('check', ['bet_m'], hd + bd + why + ' On a board that favours the raiser, most air checks back; he checks strong hands here too.');
+    }
+    case 'vs_cbet_bb': case 'vs_cbet_ip': case 'multiway_vs_bet': {
+      const ip = node !== 'vs_cbet_bb', multi = node === 'multiway_vs_bet';
+      const mdf = sz === 's' ? 'Against a third-pot bet you need to defend about 75% of your range: any pair, any draw and most overcards continue.' : sz === 'm' ? 'Against a two-thirds-pot bet you defend about 60%: pairs and real draws continue, gutshots and bare overcards fold.' : 'Against a pot-sized bet you only need to defend half your range: top pair, overpairs and strong draws continue.';
+      const mw = multi ? ' With a third player still to act behind you, tighten everything one notch: no floats, no thin calls.' : '';
+      if (t === 'monster') return set('raise', ['call'], hd + bd + 'Raise for value: strong hands raise on flops, especially when the board has draws. On very dry boards slow-playing by calling is also fine.' + mw);
+      if (t === 'strong') return set('call', isTP && sz === 's' && tex.wet >= 2 ? ['raise'] : [], hd + bd + mdf + ' Top pair and overpairs are calls: they are too good to fold and raising folds out the hands you beat.' + (isTP && sz === 's' && tex.wet >= 2 ? ' On a wet board versus a small bet, raising for protection is also fine.' : '') + mw);
+      if (t === 'draw_strong') { const combo = a.fd && a.sd >= 2; return set(combo && !multi ? 'raise' : 'call', combo ? ['call'] : (sz !== 'l' && !multi ? ['raise'] : []), hd + bd + mdf + (combo ? ' A combo draw raises as a semi-bluff: huge equity plus fold equity.' : ' Flush draws and open-enders call on odds and implied odds; raising them sometimes is fine against small bets.') + mw); }
+      if (t === 'medium') { if (multi) return set(sz === 's' ? 'call' : 'fold', sz === 's' ? ['fold'] : ['call'], hd + bd + 'Multiway, one medium pair is a fold to real bets and a reluctant call to small ones.' + mw); if (sz === 's') return set('call', [], hd + bd + mdf + ' Any pair calls a small bet.'); if (sz === 'm') return set('call', ['fold'], hd + bd + mdf + ' Medium pairs are the bottom of the calling range here; calling once and re-evaluating is standard.'); return set(isTP ? 'call' : 'fold', isTP ? ['fold'] : ['call'], hd + bd + mdf + (isTP ? ' Weak top pair still calls one big bet.' : ' Second pair is not strong enough against a pot-sized bet.')); }
+      if (t === 'draw_weak') { if (sz === 's' && !multi) return set('call', [], hd + bd + mdf + ' A gutshot or backdoor draw with overcards has enough equity against a third-pot bet.'); if (sz === 'm' && ip && !multi) return set('fold', ['call'], hd + bd + mdf + ' In position a weak draw can float sometimes, but folding is the default.'); return set('fold', [], hd + bd + mdf + ' A weak draw does not have the equity for this price.'); }
+      if (t === 'weak_sdv') { if (sz === 's' && !multi) return set('call', ['fold'], hd + bd + mdf + ' Ace-high and bottom pair call a small bet once: they beat the bluffs and the price is cheap.'); return set('fold', [], hd + bd + mdf + ' Bottom pair and ace-high fold to a real bet.'); }
+      if (ip && sz === 's' && tex.favor === 'caller' && (a.overs === 2 || a.bdfd) && !multi) return set('fold', ['raise'], hd + bd + mdf + ' Pure air folds; on a board that favours you, a small bluff-raise with backdoor equity is an option.');
+      return set('fold', [], hd + bd + mdf + ' Air folds.' + mw);
+    }
+    case 'vs_raise': {
+      const why = 'Check-raises from a blind defender are value-heavy on dry boards and draw-heavy on wet ones. Continue with top pair or better and strong draws; fold the middle.';
+      if (t === 'monster') return set('raise', ['call'], hd + bd + why + ' Re-raise for value; calling to trap is fine on a static board.');
+      if (t === 'strong') return set('call', ctx.short ? ['raise'] : [], hd + bd + why + (ctx.short ? ' Short-stacked you are close to committed, so jamming is also fine.' : ctx.deep ? ' Deep-stacked, do not stack off with one pair: call once and re-evaluate.' : ''));
+      if (t === 'draw_strong') { const combo = a.fd && a.sd >= 2; return set('call', combo ? ['raise'] : [], hd + bd + why + (combo ? ' A combo draw can re-raise as a semi-bluff.' : ' Draws call: you are getting a price and have outs.')); }
+      if (t === 'medium') return set(isTP ? 'call' : 'fold', isTP ? ['fold'] : ['call'], hd + bd + why + (isTP ? ' Weak top pair calls the small raise once.' : ' Second pair is a fold against a raise.'));
+      if (t === 'draw_weak' && sz === 's') return set('fold', ['call'], hd + bd + why + ' Weak draws mostly fold; a cheap raise can be called in position sometimes.');
+      return set('fold', [], hd + bd + why);
+    }
+    case 'turn_barrel': {
+      const why = 'Second barrel policy: keep betting value and strong draws, check medium hands to reach showdown, and bluff mainly when the turn card favours your range or you hold a draw.';
+      const tc = ctx.turnOver ? ' The turn is a high card that favours the raiser\'s range: a good bluff card.' : ctx.turnScary ? ' The turn completes draws, so villain\'s calling range now has more strong hands.' : '';
+      if (t === 'monster') return set('bet_m', ['bet_l'], hd + why + ' Bet bigger now: the pot is larger and his range has pairs and draws that pay.');
+      if (t === 'strong') return set(ctx.turnScary && !isOP ? 'check' : 'bet_m', ctx.turnScary && !isOP ? ['bet_s'] : ['bet_s'], hd + why + tc + (ctx.turnScary && !isOP ? ' Top pair checks back on a turn that completes draws.' : ''));
+      if (t === 'draw_strong') return set('bet_m', ['check'], hd + why + ' A strong draw semi-bluffs the turn.');
+      if (t === 'medium') return set('check', ['bet_s'], hd + why + ' Medium hands check back and bluff-catch.');
+      if (t === 'weak_sdv') return set('check', [], hd + why + ' Showdown value with no growth: check.');
+      if (t === 'draw_weak') return set(ctx.turnOver ? 'bet_m' : 'check', ctx.turnOver ? ['check'] : ['bet_m'], hd + why + tc);
+      return set(ctx.turnOver ? 'bet_m' : 'check', ctx.turnOver ? ['check'] : [], hd + why + tc + (ctx.turnOver ? '' : ' Air gives up on a blank turn.'));
+    }
+    case 'turn_vs_barrel': {
+      const why = 'Two barrels narrow villain to value and strong draws. Top pair calls, pairs below top pair mostly fold, strong draws continue on odds plus implied odds.';
+      if (t === 'monster') return set('raise', ['call'], hd + bd + why + ' Raise for value on the turn while he still has hands to call.');
+      if (t === 'strong') return set('call', [], hd + why + (ctx.turnScary && isTP ? ' The turn completed draws, so this is a careful call, not a raise.' : ''));
+      if (t === 'draw_strong') { const combo = a.fd && a.sd >= 2; return set('call', combo ? ['raise'] : (sz === 'l' ? ['fold'] : []), hd + why + (combo ? ' A combo draw can also raise.' : sz === 'l' ? ' Versus a pot-sized bet a bare draw is close; implied odds keep it a call.' : '')); }
+      if (t === 'medium') return set(isTP && sz !== 'l' ? 'call' : 'fold', isTP ? ['fold'] : ['call'], hd + why + (isTP ? ' Weak top pair calls a moderate second barrel but folds to a pot-sized one.' : ' Second pair and small pairs fold to a second barrel.'));
+      return set('fold', [], hd + why + ' Weak draws, ace-high and air fold.');
+    }
+    case 'river_value': {
+      const why = 'River: value bet when villain\'s checking range has enough worse hands, bluff with the hands that have no showdown value, check the middle.';
+      if (t === 'monster') return set('bet_l', ['bet_m'], hd + why + ' Bet big with the nuts; a pot-sized bet or overbet extracts from top pair.');
+      if (t === 'strong') { if (ctx.riverScary) return set(isOP ? 'bet_s' : 'check', isOP ? ['check'] : ['bet_s'], hd + why + ' The runout completes obvious draws, so a thin value bet gets called mostly by better: bet small or check.'); return set('bet_m', ['bet_s'], hd + why + ' Top pair and overpairs bet for value on a clean runout.'); }
+      if (t === 'medium') return set('check', ['bet_s'], hd + why + ' A medium hand checks for showdown; a small thin value bet is possible on dry runouts.');
+      if (t === 'weak_sdv') return set('check', [], hd + why + ' Ace-high or bottom pair wins at showdown sometimes and loses to any call: check.');
+      if (ctx.hadDraw) return set('bet_m', ['check'], hd + why + ' A missed draw has zero showdown value; it is your natural bluff after two barrels.');
+      return set('check', ['bet_m'], hd + why + ' Pure air that barreled twice usually gives up; triple-barrelling is a low-frequency play.');
+    }
+    case 'river_vs_bet': {
+      const why = 'River bets after two barrels are polarised: value or bluffs. Top pair is a bluff-catcher that calls at MDF (about 60% versus two-thirds pot) unless the runout completes the obvious draws.';
+      if (t === 'monster') return set('raise', ['call'], hd + why + ' Raise the nuts for value.');
+      if (t === 'strong') { if (ctx.riverScary) return set(sz === 'l' ? 'fold' : 'call', sz === 'l' ? ['call'] : ['fold'], hd + why + ' The runout completed draws, so one pair is a marginal call versus a moderate bet and a fold versus a big one.'); return set('call', [], hd + why + ' One-pair hands with a good kicker call a river bet.'); }
+      if (t === 'medium') return set(isTP && sz !== 'l' ? 'call' : 'fold', isTP ? ['fold'] : ['call'], hd + why + (isTP ? ' Weak top pair still calls a moderate river bet at the bottom of the bluff-catching range.' : ' Second pair is below the bluff-catching threshold.'));
+      return set('fold', [], hd + why + ' Weak showdown value and air fold.');
+    }
+  }
+  return set('check', [], '');
+}
+
+function postExploit(sc, gto) {
+  const p = sc.profile; if (!p || p === 'unknown') return null;
+  const a = sc.a, t = a.tier, node = sc.node, tex = sc.tex, sz = sc.sz;
+  const md = a.made; const isTP = /top pair/.test(md), isOP = /overpair/.test(md);
+  const betting = !NODE_INFO[node].facing;
+  const low = tex.highCat === 'low' || tex.highCat === 'T';
+  const mk = (best, note, ok) => ({ best, ok: [best].concat(ok || []), note });
+  const up = { bet_s: 'bet_m', bet_m: 'bet_l', bet_l: 'bet_l' };
+  if (p === 'station') {
+    if (betting) {
+      if ((t === 'air' || t === 'draw_weak') && gto.best !== 'check') return mk('check', 'Never bluff a calling station: he does not fold, so bets with no showdown value only lose money. Check and give up.');
+      if (t === 'medium' && gto.best === 'check' && tex.wet <= 2 && node !== 'river_value') return mk('bet_m', 'A station calls with any pair and any draw, so thin value bets print: bet ' + a.desc + ' for value where the baseline checks.');
+      if (t === 'medium' && node === 'river_value' && gto.best === 'check' && !sc.tex.scary) return mk('bet_s', 'Against a station even second pair can bet small on the river: he calls with worse pairs and ace-high.');
+      if ((t === 'strong' || t === 'monster') && gto.best.indexOf('bet') === 0) return mk(up[gto.best], 'Stations are not price sensitive. Size up with ' + a.desc + ': three-quarters pot or more gets called just as often as a third.', [gto.best]);
+      if (t === 'draw_strong' && gto.best.indexOf('bet') === 0 && node !== 'multiway_cbet') return mk(gto.best, 'You are semi-bluffing a station: he calls, so the fold equity is gone but you still get value when you hit. Bet, and plan to check if you miss.');
+    } else {
+      if (node === 'vs_raise' && t !== 'monster') return mk('fold', 'A passive player only raises with a real hand. Fold ' + a.desc + ' to his check-raise; there are no bluffs to catch.', t === 'strong' || t === 'draw_strong' ? ['call'] : []);
+      if ((node === 'river_vs_bet' || node === 'turn_vs_barrel') && t !== 'monster' && !(t === 'strong' && !isTP)) return mk('fold', 'When a calling station starts betting he has it. Fold ' + a.desc + ' to his turn and river bets.', t === 'strong' ? ['call'] : []);
+      if ((node === 'vs_cbet_bb' || node === 'vs_cbet_ip') && (sz === 'm' || sz === 'l') && (t === 'medium' || t === 'weak_sdv')) return mk('fold', 'Stations rarely c-bet as a bluff, and when they bet big they have a pair or better. Fold the medium stuff.');
+    }
+  }
+  if (p === 'nit') {
+    if (node === 'vs_cbet_ip' && low) {
+      if (sz === 's' && (t === 'draw_weak' || t === 'weak_sdv' || t === 'air')) return mk('call', 'Tight player, small board: his range is mostly AK/AQ/KQ that missed plus overpairs. His small c-bet is often the missed big cards, so float with ' + a.desc + ' and bet the turn when he checks.');
+      if ((sz === 'm' || sz === 'l') && (t === 'medium' || (t === 'strong' && isTP))) return mk('fold', 'A tight player betting big on a low board has the overpair or a set, not the missed overcards. One pair folds; only sets, two pair and strong draws continue.');
+      if (sz === 's' && t === 'medium') return mk('call', 'Call the small bet with any pair and take the pot away on the turn if he checks: a tight range on a low board is mostly unpaired.');
+    }
+    if (node === 'vs_cbet_bb' && low) {
+      if (sz === 's' && (t === 'weak_sdv' || t === 'draw_weak')) return mk('call', 'Tight player, low board: his small bet is mostly missed overcards. Call once and lead or check-raise the turn if a blank comes.');
+      if ((sz === 'm' || sz === 'l') && (t === 'medium' || (t === 'strong' && isTP))) return mk('fold', 'A tight player betting big on a low board has the overpair or a set, not the missed overcards. One pair folds.');
+    }
+    if (node === 'stab' && low && t !== 'monster') return mk('bet_m', 'When a tight raiser checks a low board he has whiffed with big cards. Bet ' + a.desc + ' and take it: he folds everything but a pair.');
+    if ((node === 'vs_cbet_bb' || node === 'vs_cbet_ip') && (tex.highCat === 'A' || tex.highCat === 'K')) {
+      if (t === 'air' || t === 'draw_weak' || t === 'weak_sdv') return mk('fold', 'Ace or king on board and a tight raiser: his range hit. No floats; fold the weak stuff.');
+      if (t === 'medium' && sz !== 's') return mk('fold', 'Against a tight range on an ace- or king-high board, middling pairs fold to a real bet: he is rarely bluffing.');
+    }
+    if (node === 'turn_vs_barrel' && (t === 'medium' || (t === 'strong' && isTP))) return mk('fold', 'Two barrels from a tight player mean an overpair or better. Fold one pair; do not pay off.');
+    if (node === 'turn_vs_barrel' && t === 'strong' && isOP) return mk('fold', 'A tight player firing twice on this board usually has a bigger overpair or a set. Your overpair is a fold or at best a call to see a cheap showdown.', ['call']);
+    if (node === 'vs_raise' && (t === 'strong' || t === 'medium')) return mk('fold', 'A tight player\'s check-raise is a set or two pair. Fold top pair and overpairs; only sets and strong draws continue.', t === 'strong' && isOP ? ['call'] : []);
+    if (node === 'river_vs_bet' && t !== 'monster') return mk('fold', 'Tight players do not bluff rivers. Fold ' + a.desc + '.');
+    if ((node === 'cbet_ip' || node === 'cbet_oop') && low && (t === 'air' || t === 'draw_weak') && gto.best === 'check') return mk('bet_m', 'Against a tight caller on a low board, bluff more: he folds everything but pairs and good draws. Bet ' + a.desc + ' and fold to a raise.');
+    if (node === 'turn_barrel' && (t === 'air' || t === 'draw_weak') && gto.best === 'check' && !sc.ctx.turnScary) return mk('bet_m', 'A tight player who called the flop with overcards gives up to a second barrel. Fire again.');
+  }
+  if (p === 'maniac' || p === 'tilt') {
+    const who = p === 'maniac' ? 'A maniac' : 'A tilted player';
+    if (!betting) {
+      if ((node === 'vs_cbet_bb' || node === 'vs_cbet_ip' || node === 'turn_vs_barrel' || node === 'river_vs_bet' || node === 'multiway_vs_bet') && (t === 'medium' || (t === 'weak_sdv' && sz !== 'l' && (node === 'vs_cbet_bb' || node === 'vs_cbet_ip')))) return mk('call', who + ' bets far too often, so ' + a.desc + ' becomes a profitable bluff-catcher. Call with any pair or ace-high; do not fold to his aggression without a reason.');
+      if ((node === 'turn_vs_barrel' || node === 'river_vs_bet') && t === 'strong') return mk('call', who + ' barrels with air. ' + a.desc + ' is a clear call; raising only folds his bluffs.');
+      if (node === 'vs_raise' && (t === 'strong' || t === 'medium')) return mk('call', who + ' check-raises light. Call with ' + a.desc + ' and let him keep bluffing on later streets.');
+      if ((node === 'vs_cbet_bb' || node === 'vs_cbet_ip') && t === 'monster') return mk('call', 'Slow-play against ' + who.toLowerCase() + ': he will bet the turn and river for you. Call now and raise later.', ['raise']);
+    } else {
+      if ((t === 'monster' || t === 'strong') && (node === 'cbet_ip' || node === 'stab' || node === 'turn_barrel') && tex.wet <= 2 && sc.stack >= 100) return mk('check', who + ' bets when checked to. Check ' + a.desc + ' on a board without many draws and let him bluff into you, then raise.', [gto.best]);
+      if ((t === 'air' || t === 'draw_weak') && gto.best !== 'check') return mk('check', 'Do not bluff ' + who.toLowerCase() + ': he calls and raises too much for a bluff to work. Check and give up.');
+      if (node === 'river_value' && t === 'medium' && gto.best === 'check') return mk('bet_s', who + ' calls rivers with anything. Bet ' + a.desc + ' small for value.');
+    }
+  }
+  return null;
+}
+
+function stackNote(sc) {
+  if (sc.short) return 'Short stacks (' + sc.depth + ' big blinds effective' + (sc.straddle ? ' behind the straddle' : '') + '): the stack-to-pot ratio is low, so top pair and overpairs are usually committed and draws prefer to jam rather than call.';
+  if (sc.deep) return 'Deep stacks (' + sc.depth + ' big blinds effective): one-pair hands should not stack off against big raises, and implied odds for draws and sets go up.';
+  return '';
+}
+
+function betAmounts(pot) { return { s: r05(pot * 0.33), m: r05(pot * 0.66), l: r05(pot) }; }
+function betActions(pot, left, sc) {
+  const b = betAmounts(pot); const out = [{ id: 'check', label: 'Check' }]; const seen = {}; sc.alias = sc.alias || {};
+  [['bet_s', b.s, 'Bet \u2153'], ['bet_m', b.m, 'Bet \u2154'], ['bet_l', b.l, 'Bet pot']].forEach(([id, amt, name]) => {
+    const capped = amt >= left; const v = capped ? left : amt; const key = fmtBB(v);
+    if (seen[key]) { sc.alias[id] = seen[key]; return; }
+    seen[key] = id; out.push({ id, label: capped ? 'All-in (' + key + 'bb)' : name + ' (' + key + 'bb)' });
+  });
+  return out;
+}
+function facingActions(bet, raiseTo, left) {
+  const call = Math.min(bet, left);
+  const out = [{ id: 'fold', label: 'Fold' }, { id: 'call', label: 'Call ' + fmtBB(call) + 'bb' + (call < bet ? ' (all-in)' : '') }];
+  if (call < left) out.push({ id: 'raise', label: raiseTo >= left ? 'All-in (' + fmtBB(left) + 'bb)' : 'Raise to ' + fmtBB(raiseTo) + 'bb' });
+  return out;
+}
+
+function genPost(rng, opt) {
+  const n = opt.table === 'mix' ? weighted(rng, [[6, 0.5], [8, 0.3], [4, 0.2]]) : +opt.table;
+  const stack = opt.stack === 'mix' ? weighted(rng, [[100, 0.6], [40, 0.25], [200, 0.15]]) : +opt.stack;
+  const profile = opt.profile || 'unknown';
+  const straddle = pickStraddle(rng, opt);
+  let node = opt.node;
+  if (!node) {
+    const base = [['cbet_ip', 12], ['cbet_oop', 8], ['vs_cbet_bb', 12], ['vs_cbet_ip', 10], ['stab', 7], ['cbet_3bp_ip', 5], ['cbet_3bp_oop', 4], ['turn_barrel', 8], ['turn_vs_barrel', 8], ['river_value', 6], ['river_vs_bet', 6], ['vs_raise', 5], ['multiway_cbet', n >= 6 ? 5 : 0], ['multiway_vs_bet', n >= 6 ? 4 : 0]];
+    if (profile === 'nit') { base.push(['vs_cbet_ip', 14], ['stab', 8], ['vs_cbet_bb', 6], ['turn_vs_barrel', 5]); }
+    if (profile === 'station') { base.push(['cbet_ip', 8], ['river_value', 6], ['turn_barrel', 5], ['vs_raise', 4]); }
+    if (profile === 'maniac' || profile === 'tilt') { base.push(['turn_vs_barrel', 8], ['river_vs_bet', 8], ['vs_raise', 5], ['vs_cbet_bb', 4]); }
+    node = weighted(rng, base);
+  }
+  for (let attempt = 0; attempt < 60; attempt++) {
+    const sc = buildPost(rng, node, n, stack, profile, straddle, false);
+    if (sc) return sc;
+  }
+  return buildPost(rng, 'cbet_ip', n, stack, profile, straddle, true);
+}
+
+function buildPost(rng, node, n, stack, profile, straddle, force) {
+  const labels = TABLES[n]; const u = straddle ? 2 : 1;
+  const sc = { kind: 'post', node, n, stack, profile, straddle, u, depth: Math.round(stack / u), history: [], ctx: { stack } };
+  sc.short = sc.depth <= 45; sc.deep = sc.depth >= 150; sc.ctx.short = sc.short; sc.ctx.deep = sc.deep;
+  const info = NODE_INFO[node];
+  const idxOf = (lab) => labels.indexOf(lab);
+  const nonBlindIdx = labels.map((l, i) => i).filter(i => l => true).filter(i => labels[i] !== 'SB' && labels[i] !== 'BB' && !(straddle && i === 0));
+  const btn = idxOf('BTN');
+  const earlyIdx = nonBlindIdx.filter(i => i !== btn);
+  const defIdx = straddle ? 0 : idxOf('BB');           // the blind defender: straddler if there is one
+  const defName = straddle ? 'straddle' : 'big blind';
+  const open = 2.5 * u; const bt = blindsTotal(sc);
+  let heroIdx, villIdx, extraIdx = null, heroSet, pot, heroIP, heroInvest;
+  const laterThan = (vi) => nonBlindIdx.filter(i => i > vi);
+  switch (node) {
+    case 'cbet_ip': case 'turn_barrel': case 'river_value': case 'vs_raise': case 'multiway_cbet': {
+      const cands = nonBlindIdx.filter(i => !/^UTG/.test(labels[i])); heroIdx = pick(rng, cands.length ? cands : nonBlindIdx);
+      villIdx = defIdx; heroSet = parseRange(RFI[rangeKeyS(sc, heroIdx)]); heroIP = true; heroInvest = open;
+      pot = open * 2 + bt - blindOf(sc, villIdx);
+      if (node === 'multiway_cbet') { const others = earlyIdx.filter(i => i > heroIdx); extraIdx = others.length && rng() < 0.5 ? pick(rng, others) : idxOf('SB'); pot = open * 3 + bt - blindOf(sc, villIdx) - blindOf(sc, extraIdx); }
+      sc.history.push('You raise to ' + fmtBB(open) + 'bb from the ' + labels[heroIdx] + (extraIdx !== null ? ', ' + seatName(sc, extraIdx) + ' calls' : '') + ', ' + defName + ' calls');
+      break;
+    }
+    case 'cbet_oop': {
+      heroIdx = pick(rng, earlyIdx.length ? earlyIdx : nonBlindIdx); if (heroIdx === btn) return null;
+      villIdx = btn; heroSet = parseRange(RFI[rangeKeyS(sc, heroIdx)]); heroIP = false; heroInvest = open; pot = open * 2 + bt;
+      sc.history.push('You raise to ' + fmtBB(open) + 'bb from the ' + labels[heroIdx] + ', button calls, blinds fold');
+      break;
+    }
+    case 'vs_cbet_bb': {
+      villIdx = pick(rng, nonBlindIdx); heroIdx = defIdx; const b = bucket(rangeKeyS(sc, villIdx)); heroSet = parseRange(VS_OPEN.BB[b].c); heroIP = false; heroInvest = open; pot = open * 2 + bt - blindOf(sc, heroIdx);
+      sc.history.push(labels[villIdx] + ' raises to ' + fmtBB(open) + 'bb, you call in the ' + defName);
+      break;
+    }
+    case 'vs_cbet_ip': case 'stab': case 'multiway_vs_bet': {
+      villIdx = pick(rng, earlyIdx.length ? earlyIdx : nonBlindIdx); const later = laterThan(villIdx); if (!later.length) return null;
+      heroIdx = pick(rng, later); const b = bucket(rangeKeyS(sc, villIdx)); heroSet = parseRange(VS_OPEN.IP[b].c); heroIP = true; heroInvest = open; pot = open * 2 + bt;
+      if (node === 'multiway_vs_bet') { extraIdx = defIdx; pot = open * 3 + bt - blindOf(sc, extraIdx); }
+      sc.history.push(labels[villIdx] + ' raises to ' + fmtBB(open) + 'bb, you call on the ' + labels[heroIdx] + (extraIdx !== null ? ', ' + defName + ' calls' : ', blinds fold'));
+      break;
+    }
+    case 'cbet_3bp_ip': {
+      villIdx = pick(rng, earlyIdx.length ? earlyIdx : nonBlindIdx); const later = laterThan(villIdx); if (!later.length) return null;
+      heroIdx = pick(rng, later); const b = bucket(rangeKeyS(sc, villIdx)); const tbl = VS_OPEN.IP[b]; heroSet = unionR(tbl.v, tbl.b); heroIP = true; sc.threeBet = true;
+      const threeTo = r05(open * 3); heroInvest = threeTo; pot = threeTo * 2 + bt; sc.oBucket = b;
+      sc.history.push(labels[villIdx] + ' raises to ' + fmtBB(open) + 'bb, you 3-bet to ' + fmtBB(threeTo) + 'bb on the ' + labels[heroIdx] + ', ' + labels[villIdx] + ' calls');
+      break;
+    }
+    case 'cbet_3bp_oop': {
+      const lp = [idxOf('CO'), btn].filter(i => i >= 0 && labels[i] !== undefined && nonBlindIdx.includes(i)); villIdx = pick(rng, lp); heroIdx = defIdx; const b = bucket(rangeKeyS(sc, villIdx)); const tbl = VS_OPEN.BB[b]; heroSet = unionR(tbl.v, tbl.b); heroIP = false; sc.threeBet = true;
+      const threeTo = r05(open * 3.6); heroInvest = threeTo; pot = threeTo * 2 + bt - blindOf(sc, heroIdx); sc.oBucket = b;
+      sc.history.push(labels[villIdx] + ' raises to ' + fmtBB(open) + 'bb, you 3-bet to ' + fmtBB(threeTo) + 'bb from the ' + defName + ', ' + labels[villIdx] + ' calls');
+      break;
+    }
+    case 'river_vs_bet': case 'turn_vs_barrel': {
+      if (rng() < 0.5) { villIdx = pick(rng, earlyIdx.length ? earlyIdx : nonBlindIdx); const later = laterThan(villIdx); if (!later.length) return null; heroIdx = pick(rng, later); heroSet = parseRange(VS_OPEN.IP[bucket(rangeKeyS(sc, villIdx))].c); heroIP = true; pot = open * 2 + bt; sc.history.push(labels[villIdx] + ' raises to ' + fmtBB(open) + 'bb, you call on the ' + labels[heroIdx]); }
+      else { villIdx = pick(rng, nonBlindIdx); heroIdx = defIdx; heroSet = parseRange(VS_OPEN.BB[bucket(rangeKeyS(sc, villIdx))].c); heroIP = false; pot = open * 2 + bt - blindOf(sc, heroIdx); sc.history.push(labels[villIdx] + ' raises to ' + fmtBB(open) + 'bb, you call in the ' + defName); }
+      heroInvest = open;
+      break;
+    }
+  }
+  if (heroIdx === undefined || villIdx === undefined) return null;
+  sc.seats = labels.map((l, i) => ({ label: l, idx: i, state: 'folded', act: '' }));
+  sc.seats[heroIdx].state = 'hero'; sc.seats[villIdx].state = 'active'; if (extraIdx !== null) sc.seats[extraIdx].state = 'active';
+  if (straddle && sc.seats[0].state === 'folded') sc.seats[0].act = 'fold';
+  sc.heroIdx = heroIdx; sc.villIdx = villIdx; sc.villains = [villIdx]; if (extraIdx !== null) sc.villains.push(extraIdx);
+  sc.seats[villIdx].profile = profile; if (extraIdx !== null) sc.seats[extraIdx].profile = profile;
+  sc.heroIP = heroIP; sc.heroLabel = labels[heroIdx]; sc.villLabel = labels[villIdx]; sc.villKey = rangeKeyS(sc, villIdx); sc.heroKey = rangeKeyS(sc, heroIdx); sc.villName = seatName(sc, villIdx);
+  const cls = sampleClass(rng, heroSet); sc.cls = cls; sc.hand = cardsFor(rng, cls);
+  const effStack = stack - heroInvest; let left = effStack;
+  let board = dealCards(rng, sc.hand, 3);
+  sc.flop = board.slice();
+  const flopTex = texture(board); sc.tex = flopTex;
+  const aF = analyze(sc.hand, board); sc.ctx.heroFlushCard = flopTex.monotone && sc.hand.some(c => c.s === board[0].s);
+  const rejectionOk = (r, allowed) => allowed.some(x => r.ok.includes(x)) || force;
+  const chosen = (r, allowed) => allowed.includes(r.best) ? r.best : (allowed.find(x => r.ok.includes(x)) || allowed[0]);
+  const flopNode = (node === 'turn_barrel' || node === 'river_value' || node === 'vs_raise') ? 'cbet_ip' : (node === 'turn_vs_barrel' || node === 'river_vs_bet') ? (heroIP ? 'vs_cbet_ip' : 'vs_cbet_bb') : node;
+  let sz = null;
+  if (NODE_INFO[flopNode].facing) {
+    if (flopTex.favor === 'pfr' || (flopTex.paired && flopTex.wet <= 2)) sz = weighted(rng, [['s', 0.75], ['m', 0.25]]);
+    else if (flopTex.monotone) sz = weighted(rng, [['s', 0.7], ['m', 0.3]]);
+    else sz = weighted(rng, [['s', 0.25], ['m', 0.55], ['l', 0.2]]);
+  }
+  sc.ctx.sz = sz;
+  const flopStrat = heroStrat(flopNode, aF, flopTex, Object.assign({}, sc.ctx, { sz }));
+  const villBets = (street, amt, tag) => street + ': ' + (heroIP ? sc.villName + ' bets ' : 'you check, ' + sc.villName + ' bets ') + fmtBB(amt) + 'bb' + (tag ? ' (' + tag + ')' : '');
+  sc.flopSz = sz;
+  if (node === 'vs_raise') {
+    if (!rejectionOk(flopStrat, ['bet_s'])) return null;
+    const b = betAmounts(pot).s; const raiseTo = Math.min(r05(b * 3.5), left); const potNow = pot + b + raiseTo;
+    sc.history.push('Flop: ' + defName + ' checks, you bet ' + fmtBB(b) + 'bb, ' + defName + ' raises to ' + fmtBB(raiseTo) + 'bb' + (raiseTo >= left ? ' (all-in)' : ''));
+    sc.pot = potNow; sc.toCall = raiseTo - b; sc.sz = 's'; sc.actions = facingActions(sc.toCall, r05(raiseTo * 2.6), left - b); sc.betSize = raiseTo; sc.flopBet = b;
+    sc.gto = heroStrat('vs_raise', aF, flopTex, Object.assign({}, sc.ctx, { sz: 's' }));
+    sc.board = board; sc.street = 'flop'; sc.a = aF;
+  } else if (node === flopNode) {
+    if (info.facing) {
+      const bet = Math.min(betAmounts(pot)[sz], left); sc.betSize = bet;
+      sc.history.push('Flop: ' + (node === 'vs_cbet_ip' ? sc.villName + ' bets ' : node === 'multiway_vs_bet' ? defName + ' checks, ' + sc.villName + ' bets ' : 'you check, ' + sc.villName + ' bets ') + fmtBB(bet) + 'bb (' + (bet >= left ? 'all-in' : SIZE_NAME[sz]) + ')');
+      sc.pot = pot + bet; sc.toCall = bet; sc.sz = sz; sc.actions = facingActions(bet, r05(bet * 3.2), left); sc.gto = flopStrat;
+    } else {
+      sc.history.push(node === 'cbet_oop' || node === 'cbet_3bp_oop' ? 'Flop: you are first to act' : node === 'stab' ? 'Flop: ' + sc.villName + ' checks' : node === 'multiway_cbet' ? 'Flop: both opponents check to you' : 'Flop: ' + sc.villName + ' checks');
+      sc.pot = pot; sc.actions = betActions(pot, left, sc); sc.gto = flopStrat;
+    }
+    sc.board = board; sc.street = 'flop'; sc.a = aF;
+  } else if (node === 'turn_barrel' || node === 'river_value') {
+    if (!rejectionOk(flopStrat, ['bet_s', 'bet_m'])) return null;
+    const fb = Math.min(betAmounts(pot)[chosen(flopStrat, ['bet_s', 'bet_m']) === 'bet_m' ? 'm' : 's'], left); pot = pot + fb * 2; left -= fb;
+    if (left <= 0) return null;
+    sc.flopBet = fb;
+    sc.history.push('Flop: ' + defName + ' checks, you bet ' + fmtBB(fb) + 'bb, ' + defName + ' calls');
+    board = board.concat(dealCards(rng, sc.hand.concat(board), 1));
+    const tex4 = texture(board); const a4 = analyze(sc.hand, board);
+    const turnCard = board[3]; const flopMax = Math.max(...sc.flop.map(c => RV[c.r]));
+    sc.ctx.turnOver = RV[turnCard.r] > flopMax && RV[turnCard.r] >= 11; sc.ctx.turnScary = tex4.scary && a4.madeTier !== 'monster';
+    const turnStrat = heroStrat('turn_barrel', a4, tex4, sc.ctx);
+    if (node === 'turn_barrel') {
+      sc.history.push('Turn: ' + defName + ' checks'); sc.board = board; sc.street = 'turn'; sc.a = a4; sc.tex = tex4; sc.pot = pot; sc.actions = betActions(pot, left, sc); sc.gto = turnStrat;
+    } else {
+      if (!rejectionOk(turnStrat, ['bet_s', 'bet_m', 'bet_l'])) return null;
+      const tb = Math.min(betAmounts(pot)[chosen(turnStrat, ['bet_m', 'bet_s', 'bet_l']).slice(4)], left); pot = pot + tb * 2; left -= tb;
+      if (left <= 0) return null;
+      sc.turnBet = tb;
+      sc.history.push('Turn: ' + defName + ' checks, you bet ' + fmtBB(tb) + 'bb, ' + defName + ' calls');
+      sc.ctx.hadDraw = a4.drawTier === 'draw_strong' || (a4.drawTier === 'draw_weak' && a4.madeTier === 'air');
+      board = board.concat(dealCards(rng, sc.hand.concat(board), 1));
+      const tex5 = texture(board); const a5 = analyze(sc.hand, board);
+      sc.ctx.riverScary = tex5.scary && a5.madeTier !== 'monster';
+      sc.history.push('River: ' + defName + ' checks'); sc.board = board; sc.street = 'river'; sc.a = a5; sc.tex = tex5; sc.pot = pot; sc.actions = betActions(pot, left, sc); sc.gto = heroStrat('river_value', a5, tex5, sc.ctx);
+    }
+  } else if (node === 'turn_vs_barrel' || node === 'river_vs_bet') {
+    if (!rejectionOk(flopStrat, ['call'])) return null;
+    const fb = Math.min(betAmounts(pot)[sz], left); pot = pot + fb * 2; left -= fb;
+    if (left <= 0) return null;
+    sc.flopBet = fb;
+    sc.history.push(villBets('Flop', fb, '') + ', you call');
+    board = board.concat(dealCards(rng, sc.hand.concat(board), 1));
+    const tex4 = texture(board); const a4 = analyze(sc.hand, board);
+    sc.ctx.turnScary = tex4.scary && a4.madeTier !== 'monster';
+    const tsz = weighted(rng, [['m', 0.7], ['l', 0.3]]); const tb = Math.min(betAmounts(pot)[tsz], left);
+    const turnStrat = heroStrat('turn_vs_barrel', a4, tex4, Object.assign({}, sc.ctx, { sz: tsz }));
+    if (node === 'turn_vs_barrel') {
+      sc.history.push(villBets('Turn', tb, tb >= left ? 'all-in' : SIZE_NAME[tsz]));
+      sc.board = board; sc.street = 'turn'; sc.a = a4; sc.tex = tex4; sc.pot = pot + tb; sc.toCall = tb; sc.sz = tsz; sc.betSize = tb; sc.actions = facingActions(tb, r05(tb * 2.8), left); sc.gto = turnStrat;
+    } else {
+      if (!rejectionOk(turnStrat, ['call'])) return null;
+      pot = pot + tb * 2; left -= tb;
+      if (left <= 0) return null;
+      sc.turnBet = tb;
+      sc.history.push(villBets('Turn', tb, '') + ', you call');
+      board = board.concat(dealCards(rng, sc.hand.concat(board), 1));
+      const tex5 = texture(board); const a5 = analyze(sc.hand, board);
+      sc.ctx.riverScary = tex5.scary && a5.madeTier !== 'monster';
+      const rsz = weighted(rng, [['m', 0.6], ['l', 0.4]]); const rb = Math.min(betAmounts(pot)[rsz], left);
+      sc.history.push(villBets('River', rb, rb >= left ? 'all-in' : SIZE_NAME[rsz]));
+      sc.board = board; sc.street = 'river'; sc.a = a5; sc.tex = tex5; sc.pot = pot + rb; sc.toCall = rb; sc.sz = rsz; sc.betSize = rb; sc.actions = facingActions(rb, r05(rb * 2.5), left); sc.gto = heroStrat('river_vs_bet', a5, tex5, Object.assign({}, sc.ctx, { sz: rsz }));
+    }
+  }
+  if (!sc.gto) return null;
+  sc.sz = sc.sz || sz;
+  sc.effStack = effStack; sc.left = left;
+  sc.alias = sc.alias || {}; { const ids = sc.actions.map(x => x.id); if (!ids.includes('raise')) sc.alias.raise = 'call'; }
+  { const map = (id) => sc.alias[id] || id; sc.gto.best = map(sc.gto.best); sc.gto.ok = [...new Set(sc.gto.ok.map(map))]; }
+  sc.exploit = postExploit(sc, sc.gto);
+  if (sc.exploit) { const map = (id) => sc.alias[id] || id; sc.exploit.best = map(sc.exploit.best); sc.exploit.ok = [...new Set(sc.exploit.ok.map(map))]; }
+  sc.stackNote = stackNote(sc);
+  sc.title = info.title.replace('big blind', defName);
+  sc.tags = handTags(cls);
+  return sc;
+}
+
+/* ---------- opponent ranges, breakdowns, equity, things to consider ---------- */
+const NIT_OPEN_EP = '77+, ATs+, KJs+, QJs, AQo+, KQo';
+const NIT_OPEN_LP = '55+, A8s+, KTs+, QTs+, JTs, T9s, AJo+, KQo';
+const NIT_3BET = 'QQ+, AKs, AKo'; const NIT_4BET = 'KK+, AKs';
+const NIT_CALL = '22-JJ, ATs+, KTs+, QTs+, JTs, T9s, 98s, AQo, AJo, KQo';
+const LOOSE_OPEN = '22+, A2s+, K2s+, Q4s+, J6s+, T6s+, 96s+, 85s+, 75s+, 64s+, 54s, A2o+, K8o+, Q9o+, J9o+, T9o';
+const STATION_CALL = '22+, A2s+, K2s+, Q2s+, J4s+, T6s+, 96s+, 85s+, 75s+, 64s+, 54s, A2o+, K7o+, Q8o+, J8o+, T8o+, 98o, 87o, 76o';
+const STATION_3BET = 'JJ+, AQs+, AKo'; const STATION_4BET = 'KK+';
+const TILT_3BET = '77+, A9s+, KTs+, QTs+, JTs, ATo+, KJo+'; const TILT_4BET = 'TT+, AQs+, AKo';
+const MANIAC_OPEN = '22+, A2s+, K2s+, Q2s+, J4s+, T6s+, 96s+, 85s+, 75s+, 64s+, 54s, A2o+, K5o+, Q8o+, J8o+, T8o+, 98o, 87o';
+const MANIAC_3BET = '55+, A2s+, K9s+, QTs+, JTs, T9s, ATo+, KJo+, QJo'; const MANIAC_4BET = '99+, AJs+, AQo+, A5s-A2s';
+const LIMP_RANGE = '22-99, A2s-A9s, K5s-KTs, Q6s-QTs, J7s-JTs, T7s-T9s, 96s-98s, 85s-87s, 74s-76s, 64s-65s, 53s-54s, A2o-A9o, K9o-KJo, Q9o-QJo, J9o-JTo, T9o, 98o';
+const NIT_LIMP = '22-99, A2s-A9s, KTs, QTs, JTs, T9s, 98s, AA, KK';
+
+function profileRange(profile, kind, base, opts) {
+  opts = opts || {};
+  switch (kind) {
+    case 'open': return profile === 'nit' ? (opts.late ? NIT_OPEN_LP : NIT_OPEN_EP) : (profile === 'station' || profile === 'tilt') ? LOOSE_OPEN : profile === 'maniac' ? MANIAC_OPEN : base;
+    case '3bet': return profile === 'nit' ? NIT_3BET : profile === 'station' ? STATION_3BET : profile === 'tilt' ? TILT_3BET : profile === 'maniac' ? MANIAC_3BET : base;
+    case '4bet': return profile === 'nit' ? NIT_4BET : profile === 'station' ? STATION_4BET : profile === 'tilt' ? TILT_4BET : profile === 'maniac' ? MANIAC_4BET : base;
+    case 'call': return profile === 'nit' ? NIT_CALL : (profile === 'station' || profile === 'tilt' || profile === 'maniac') ? STATION_CALL : base;
+    case 'limp': return profile === 'nit' ? NIT_LIMP : (profile === 'station' || profile === 'tilt') ? STATION_CALL : base;
+  }
+  return base;
+}
+function rangeToSet(x) { return typeof x === 'string' ? parseRange(x) : x; }
+function setToStr(set) { return [...set].join(','); }
+function setPct(set) { let c = 0; set.forEach(h => c += combosOf(h)); return Math.round(c / 1326 * 100); }
+function summarizeSet(set) {
+  const arr = [...set];
+  const pairs = arr.filter(h => h.length === 2).map(h => RV[h[0]]).sort((a, b) => a - b);
+  const sAces = arr.filter(h => h[0] === 'A' && h[2] === 's').map(h => RV[h[1]]).sort((a, b) => a - b);
+  const oAces = arr.filter(h => h[0] === 'A' && h[2] === 'o').map(h => RV[h[1]]).sort((a, b) => a - b);
+  const sBroad = arr.filter(h => h[2] === 's' && h[0] !== 'A' && RV[h[0]] >= 10 && RV[h[1]] >= 10).length;
+  const oBroad = arr.filter(h => h[2] === 'o' && h[0] !== 'A' && RV[h[0]] >= 10 && RV[h[1]] >= 10).length;
+  const sConn = arr.filter(h => h[2] === 's' && h[0] !== 'A' && RV[h[0]] < 10 && RV[h[0]] - RV[h[1]] <= 2).length;
+  const sKx = arr.filter(h => h[2] === 's' && h[0] === 'K' && RV[h[1]] < 10).length;
+  const parts = [];
+  const span = (v) => v.length ? (v.length === 13 ? 'all pairs' : (v[0] === v[v.length - 1] ? RN[v[0]] + RN[v[0]] : RN[v[0]] + RN[v[0]] + '-' + RN[v[v.length - 1]] + RN[v[v.length - 1]])) : '';
+  if (pairs.length) parts.push(span(pairs));
+  if (sAces.length) parts.push(sAces.length >= 12 ? 'every suited ace' : 'A' + RN[sAces[0]] + 's' + (sAces.length > 1 ? '-A' + RN[sAces[sAces.length - 1]] + 's' : ''));
+  if (oAces.length) parts.push(oAces.length >= 12 ? 'every offsuit ace' : 'A' + RN[oAces[0]] + 'o+');
+  if (sBroad) parts.push(sBroad >= 6 ? 'suited broadways' : 'the best suited broadways');
+  if (oBroad) parts.push(oBroad >= 5 ? 'offsuit broadways' : 'a few offsuit broadways');
+  if (sKx) parts.push(sKx >= 6 ? 'most suited kings' : 'some suited kings');
+  if (sConn) parts.push(sConn >= 6 ? 'suited connectors and gappers' : 'a few suited connectors');
+  return parts.join(', ');
+}
+
+function villainPre(sc) {
+  const p = sc.profile; const out = [];
+  const mk = (who, kind, str, note) => { const set = rangeToSet(str); out.push({ who, kind, set, pct: setPct(set), summary: summarizeSet(set), note: note || '' }); };
+  switch (sc.type) {
+    case 'rfi': return out;
+    case 'vsOpen': mk(seatName(sc, sc.openerIdx) + ' open', 'open', profileRange(p, 'open', RFI[sc.openerKey], { late: sc.oBucket === 'LP' || sc.oBucket === 'SB' })); break;
+    case 'vs3bet': { const t = vsOpenTable(sc.threeTbl, bucket(sc.heroKey)); mk(seatName(sc, sc.threeIdx) + ' 3-bet', '3bet', profileRange(p, '3bet', setToStr(unionR(t.v, t.b))), p === 'unknown' ? 'value hands plus some suited-ace and suited-connector bluffs' : ''); break; }
+    case 'vs4bet': mk(seatName(sc, sc.openerIdx) + ' 4-bet', '4bet', profileRange(p, '4bet', setToStr(unionR(sc.villTbl.v, sc.villTbl.b))), p === 'unknown' ? 'premium pairs, AK and a few suited-ace bluffs' : ''); break;
+    case 'squeeze': { mk(seatName(sc, sc.openerIdx) + ' open', 'open', profileRange(p, 'open', RFI[sc.openerKey], { late: sc.oBucket === 'LP' })); const ct = vsOpenTable(sc.callerTbl, sc.oBucket); mk(seatName(sc, sc.callerIdx) + ' call', 'call', profileRange(p, 'call', ct.c), 'a caller has a capped range: no premium pairs or AK, which would have 3-bet'); break; }
+    case 'vsLimp': mk(sc.nl > 1 ? 'each limper' : seatName(sc, sc.limpers[0]) + ' limp', 'limp', profileRange(p, 'limp', LIMP_RANGE), p === 'nit' ? 'a tight player who limps is often trapping with a big pair or set-mining' : 'limpers rarely hold premium hands; expect small pairs, suited junk and weak aces'); break;
+  }
+  return out;
+}
+
+function enumerateCombos(set, exclude) {
+  const used = new Set(exclude.map(c => c.r + c.s)); const out = [];
+  set.forEach(cls => {
+    const hi = cls[0], lo = cls[1];
+    if (cls.length === 2) { for (let i = 0; i < 4; i++) for (let j = i + 1; j < 4; j++) { const a = { r: hi, s: SUITS[i] }, b = { r: hi, s: SUITS[j] }; if (!used.has(a.r + a.s) && !used.has(b.r + b.s)) out.push({ cards: [a, b], cls, w: 1 }); } }
+    else if (cls[2] === 's') { for (let i = 0; i < 4; i++) { const a = { r: hi, s: SUITS[i] }, b = { r: lo, s: SUITS[i] }; if (!used.has(a.r + a.s) && !used.has(b.r + b.s)) out.push({ cards: [a, b], cls, w: 1 }); } }
+    else { for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) { if (i === j) continue; const a = { r: hi, s: SUITS[i] }, b = { r: lo, s: SUITS[j] }; if (!used.has(a.r + a.s) && !used.has(b.r + b.s)) out.push({ cards: [a, b], cls, w: 1 }); } }
+  });
+  return out;
+}
+function tierCat(a) {
+  if (a.madeTier === 'monster') return 'strong';
+  if (a.madeTier === 'strong') return 'toppair';
+  if (a.drawTier === 'draw_strong') return 'draw';
+  if (a.madeTier === 'medium') return 'mid';
+  if (a.drawTier === 'draw_weak') return 'draw';
+  return 'air';
+}
+const CAT_LABEL = { strong: 'two pair or better', toppair: 'top pair or overpair', mid: 'middle pairs and weak top pair', draw: 'draws', air: 'air and weak showdown value' };
+function stageWeight(stage, a, tex, prev) {
+  const t = a.tier, m = a.madeTier, d = a.drawTier;
+  switch (stage) {
+    case 'cbet': if (tex.favor === 'pfr') return 1; return m === 'monster' || m === 'strong' ? 1 : d === 'draw_strong' ? 0.9 : m === 'medium' ? 0.45 : d === 'draw_weak' ? 0.5 : m === 'weak_sdv' ? 0.2 : (a.overs || a.bdfd) ? 0.3 : 0.15;
+    case 'check': { const b = stageWeight('cbet', a, tex, prev); if (tex.favor === 'pfr') return m === 'monster' ? 0.25 : m === 'strong' ? 0.25 : d === 'draw_strong' ? 0.3 : m === 'medium' ? 0.55 : d === 'draw_weak' ? 0.5 : m === 'weak_sdv' ? 0.7 : 0.6; return 1 - b; }
+    case 'callflop': return m === 'monster' ? 0.7 : m === 'strong' ? 1 : d === 'draw_strong' ? 0.9 : m === 'medium' ? 0.9 : d === 'draw_weak' ? 0.6 : m === 'weak_sdv' ? 0.5 : a.overs ? 0.2 : 0.1;
+    case 'raise': return m === 'monster' ? 0.8 : m === 'strong' ? (tex.wet >= 2 ? 0.35 : 0.2) : d === 'draw_strong' ? 0.5 : d === 'draw_weak' ? 0.15 : m === 'weak_sdv' ? 0.05 : (a.bdfd || a.overs === 2) ? 0.12 : 0.08;
+    case 'barrel': return m === 'monster' ? 1 : m === 'strong' ? 0.9 : d === 'draw_strong' ? 0.8 : m === 'medium' ? 0.25 : d === 'draw_weak' ? 0.25 : m === 'weak_sdv' ? 0.1 : 0.2;
+    case 'callturn': return m === 'monster' ? 0.7 : m === 'strong' ? 1 : d === 'draw_strong' ? 0.85 : m === 'medium' ? 0.7 : d === 'draw_weak' ? 0.3 : m === 'weak_sdv' ? 0.3 : 0.05;
+    case 'riverbet': return m === 'monster' ? 1 : m === 'strong' ? 0.9 : m === 'medium' ? 0.15 : m === 'weak_sdv' ? 0.1 : (prev && prev.drawTier) ? 0.6 : 0.15;
+  }
+  return 1;
+}
+function villainPost(sc) {
+  const p = sc.profile; const node = sc.node;
+  let set, who, note = '';
+  const vk = sc.villKey, vb = bucket(vk), hb = bucket(sc.heroKey);
+  const isPfrLine = ['vs_cbet_bb', 'vs_cbet_ip', 'stab', 'turn_vs_barrel', 'river_vs_bet', 'multiway_vs_bet'].includes(node);
+  if (isPfrLine) { set = rangeToSet(profileRange(p, 'open', RFI[vk], { late: vb === 'LP' })); who = sc.villName + ' open'; }
+  else if (node === 'cbet_oop') { set = rangeToSet(profileRange(p, 'call', VS_OPEN.IP[hb].c)); who = 'button call'; note = 'a caller\'s range is capped: the premiums 3-bet'; }
+  else if (node === 'cbet_3bp_ip') { set = rangeToSet(profileRange(p, 'call', VS_3BET[sc.oBucket].IP.c)); who = sc.villName + ' call of your 3-bet'; note = 'no AA/KK/AK here: those would have 4-bet'; }
+  else if (node === 'cbet_3bp_oop') { set = rangeToSet(profileRange(p, 'call', VS_3BET[sc.oBucket].OOP.c)); who = sc.villName + ' call of your 3-bet'; note = 'no AA/KK/AK here: those would have 4-bet'; }
+  else { const bbt = sc.straddle ? VS_OPEN.BB[hb] : VS_OPEN.BB[hb]; set = rangeToSet(profileRange(p, 'call', bbt.c)); who = (sc.straddle ? 'straddle' : 'big blind') + ' call'; note = 'a blind defender\'s range is wide but capped: no QQ+/AK, which would have 3-bet'; }
+  // enumerate and weight through the line
+  let combos = enumerateCombos(set, sc.hand.concat(sc.board));
+  const flop = sc.board.slice(0, 3); const tF = texture(flop);
+  const stages = [];
+  if (node === 'vs_cbet_bb' || node === 'vs_cbet_ip' || node === 'multiway_vs_bet') stages.push(['cbet', flop, tF]);
+  if (node === 'stab') stages.push(['check', flop, tF]);
+  if (node === 'vs_raise') stages.push(['raise', flop, tF]);
+  if (node === 'turn_barrel' || node === 'river_value') stages.push(['callflop', flop, tF]);
+  if (node === 'river_value') stages.push(['callturn', sc.board.slice(0, 4), texture(sc.board.slice(0, 4))]);
+  if (node === 'turn_vs_barrel' || node === 'river_vs_bet') { stages.push(['cbet', flop, tF]); stages.push(['barrel', sc.board.slice(0, 4), texture(sc.board.slice(0, 4))]); }
+  if (node === 'river_vs_bet') stages.push(['riverbet', sc.board, sc.tex]);
+  combos.forEach(cb => { let prev = null; for (const [stage, b, t] of stages) { const a = analyze(cb.cards, b); cb.w *= stageWeight(stage, a, t, prev); prev = a; } });
+  combos = combos.filter(cb => cb.w > 0.01);
+  // breakdown on the current board
+  const cats = { strong: 0, toppair: 0, mid: 0, draw: 0, air: 0 }; const byCls = { strong: {}, toppair: {}, mid: {}, draw: {}, air: {} }; let tot = 0; let beats = 0;
+  combos.forEach(cb => { const a = analyze(cb.cards, sc.board); const c = tierCat(a); cats[c] += cb.w; byCls[c][cb.cls] = (byCls[c][cb.cls] || 0) + cb.w; tot += cb.w; cb.cat = c; });
+  const breakdown = ['strong', 'toppair', 'mid', 'draw', 'air'].map(c => ({ cat: c, label: CAT_LABEL[c], pct: tot ? Math.round(cats[c] / tot * 100) : 0, hands: Object.keys(byCls[c]).sort((x, y) => byCls[c][y] - byCls[c][x]).slice(0, 5) })).filter(b => b.pct > 0);
+  const lineNote = !stages.length ? '' : node === 'stab' ? ' After checking, his range leans toward its weaker hands: most strong hands would have bet.' : node === 'vs_raise' ? ' After check-raising, the range is polarised toward sets, two pair and draws.' : node === 'river_value' ? ' After calling twice, the range is mostly pairs and busted draws that gave up.' : node === 'turn_barrel' ? ' After calling your flop bet, the range is mostly pairs and draws.' : stages.length === 3 ? ' After betting three streets, the range is polarised: strong hands and missed draws.' : stages.length === 2 ? ' After betting twice, the range is weighted toward value and strong draws.' : ' After betting, the range is weighted toward the top of this.';
+  return { who, set, pct: setPct(set), summary: summarizeSet(set), note, combos, breakdown, lineNote };
+}
+
+function equityVs(hero, board, combos, rng, trials) {
+  if (!combos.length) return null;
+  let tot = 0; combos.forEach(c => tot += c.w);
+  let win = 0, tie = 0, n = 0;
+  const need = 5 - board.length;
+  for (let t = 0; t < trials; t++) {
+    let x = rng() * tot, cb = combos[combos.length - 1];
+    for (const c of combos) { x -= c.w; if (x <= 0) { cb = c; break; } }
+    const full = need ? board.concat(dealCards(rng, hero.concat(board, cb.cards), need)) : board;
+    const d = cmpHand(bestHand(hero.concat(full)), bestHand(cb.cards.concat(full)));
+    if (d > 0) win++; else if (d === 0) tie++; n++;
+  }
+  return Math.round((win + tie / 2) / n * 100);
+}
+
+function buildThink(sc, rng) {
+  const th = { ranges: [], points: [], equity: null, equityVs: '' };
+  const posOf = (idx) => TABLES[sc.n][idx];
+  const pct = (x) => Math.round(x * 100);
+  if (sc.kind === 'pre') {
+    const vr = villainPre(sc); th.ranges = vr.map(v => ({ who: v.who, pct: v.pct, summary: v.summary, note: v.note }));
+    const behind = sc.seats.filter(s => s.state === 'pending').length;
+    const hn = handName(sc.cls);
+    if (sc.type === 'rfi') {
+      th.points.push('Position: ' + (behind ? behind + ' player' + (behind > 1 ? 's' : '') + ' still to act behind you' : 'you close the action') + (sc.heroKey === 'SB' || sc.heroKey === 'BB' ? ', and you will be out of position on every street' : sc.heroKey === 'BTN' ? ', and you will have position on every street' : '') + '.');
+      if (behind) th.points.push('The chance that at least one player behind wakes up with a 3-betting hand (~5% each) is about ' + pct(1 - Math.pow(0.95, behind)) + '%; the more players behind, the more your range should tighten.');
+      th.points.push('Ask why this hand opens from here: does it make top pair with a good kicker, does it make the nuts (pairs, suited connectors), and is it dominated by the hands that continue?');
+      if (sc.straddle) th.points.push('The straddle doubles the blinds: play as if everyone is ' + sc.depth + ' big blinds deep and open to ' + fmtBB(sc.raiseTo) + 'bb.');
+    } else {
+      const main = vr[0];
+      if (main) th.points.push('Their range is about ' + main.pct + '% of hands. Which part of it does ' + hn + ' beat, and which part beats you? ' + (sc.tags.offBroadway || sc.tags.offAce ? 'Offsuit big cards get dominated by the top of a range and flop second-best pairs.' : sc.tags.pair ? 'Pairs are rarely dominated but need to hit a set or hold up unimproved.' : sc.tags.suited ? 'Suited hands win big pots when they hit and fold cheaply when they miss.' : 'Hands without a pair, a suit or connectivity need a clear reason to continue.'));
+      if (sc.toCall) th.points.push('Price: call ' + fmtBB(sc.toCall) + 'bb into ' + fmtBB(sc.pot) + 'bb, so you need about ' + pct(sc.toCall / (sc.pot + sc.toCall)) + '% equity just to break even on this street (before implied odds and position).');
+      if (sc.type === 'vsOpen' || sc.type === 'squeeze') th.points.push('Position: ' + (sc.heroIP ? 'you will act after the raiser on every street, which lets you call wider and realise more equity.' : (sc.heroTbl === 'BB' || sc.heroKey === 'BB' ? 'you close the action but play the rest of the hand out of position.' : 'you are out of position and do not close the action: 3-bet or fold is the cleaner line.')));
+      if (sc.type === 'vsOpen' && behind) th.points.push(behind + ' player' + (behind > 1 ? 's' : '') + ' still to act behind you; a call invites a squeeze, a 3-bet usually shuts them out.');
+      if (sc.type === 'vs3bet') th.points.push('Your open is now facing a much tighter range. 4-bet only what beats it, call with hands that play well at a stack-to-pot ratio around 4, and fold the rest without ego.');
+      if (sc.type === 'vs4bet') th.points.push('A 4-bet range is tiny (roughly 3-6% of hands). Only the very top of your 3-betting range continues; being in position matters less when a quarter of the stack is already in.');
+      if (sc.type === 'squeeze') th.points.push('Two opponents means the pot is bigger and your hand must beat two ranges; squeeze for value with hands that dominate both, or call with hands that love multiway pots.');
+      if (sc.type === 'vsLimp') th.points.push('Limpers are capped and passive. Raise big (4bb plus 1bb per limper) to isolate one weak range in position; overlimp only with hands that want a cheap multiway flop.');
+    }
+    if (sc.tags.pair && sc.tags.pairTier === 'small' && sc.toCall) th.points.push('Set-mining math: you have about ' + Math.round(sc.stack / sc.toCall) + 'x the call behind; you want roughly 15x or more to call purely for set value.');
+    if (sc.short) th.points.push('Stack depth: effectively ' + sc.depth + ' big blinds deep. Speculative hands lose their implied odds, 3-bets become commitments, and jams replace 4-bets.');
+    if (sc.deep) th.points.push('Stack depth: ' + sc.depth + ' big blinds deep. Implied odds are huge for pairs and suited connectors, and single pairs should avoid bloating the pot.');
+    if (sc.profile !== 'unknown') th.points.push('Read: ' + PROFILES[sc.profile].desc + ' Adjust the ranges above before you decide.');
+    th.points.push('If you raise, size it correctly: ' + (sc.type === 'rfi' ? fmtBB(sc.raiseTo) + 'bb is the standard open here' : sc.type === 'vsOpen' ? '3-bet to about ' + fmtBB(sc.raiseTo) + 'bb (3x in position, 4x out of position)' : sc.type === 'squeeze' ? 'squeeze to about ' + fmtBB(sc.raiseTo) + 'bb (4x the open plus one open per caller)' : sc.type === 'vs3bet' ? (sc.short ? 'a 4-bet is an all-in at this depth' : '4-bet to about ' + fmtBB(sc.raiseTo) + 'bb, roughly 2.3x the 3-bet') : sc.type === 'vsLimp' ? sc.raiseTo + 'bb over the limpers' : 'a 5-bet is all-in') + '.');
+    // equity
+    if (vr.length) { const combos = enumerateCombos(vr[0].set, sc.hand); th.equity = equityVs(sc.hand, [], combos, rng, 1200); th.equityVs = vr[0].who + ' range'; }
+  } else {
+    const v = villainPost(sc); th.ranges = [{ who: v.who, pct: v.pct, summary: v.summary, note: v.note, breakdown: v.breakdown, lineNote: v.lineNote }];
+    const a = sc.a, tex = sc.tex;
+    const heroAgg = ['cbet_ip', 'cbet_oop', 'cbet_3bp_ip', 'cbet_3bp_oop', 'turn_barrel', 'river_value', 'vs_raise', 'multiway_cbet'].includes(sc.node);
+    const favorTxt = tex.favor === 'pfr' ? (heroAgg ? 'this high, dry board favours your range as the raiser: overpairs and big top pairs live here' : 'this high, dry board favours the raiser\'s range, not your calling range') : tex.favor === 'caller' ? (heroAgg ? 'this low or connected board hits the caller\'s range harder than yours: pairs, two-pair combos and straight draws' : 'this low or connected board hits your calling range harder than the raiser\'s: you have the pairs, two pairs and straight draws') : 'this middling board is fairly even between the two ranges';
+    th.points.push('Range versus range: ' + favorTxt + '. ' + (sc.heroIP ? 'You have position, so you can realise equity and bluff more.' : 'You are out of position, so keep pots smaller with medium hands.'));
+    th.points.push('Your hand: ' + a.desc + '. ' + (a.tier === 'monster' ? 'Think about how to get the most money in: which sizes keep his worse hands calling?' : a.tier === 'strong' ? 'One strong pair: good enough to bet or call once, not to stack off deep; watch the cards that beat you.' : a.tier === 'draw_strong' ? 'A strong draw wins by making the hand or by making him fold: semi-bluffs and calls on price are both live.' : a.tier === 'medium' ? 'A medium hand wants a cheap showdown: check or call small, avoid building pots.' : a.tier === 'draw_weak' ? 'A weak draw needs a good price or fold equity; it rarely justifies big money.' : a.tier === 'weak_sdv' ? 'Showdown value but no growth: the goal is to get there cheaply.' : 'No pair, no real draw: this hand is a bluff candidate or a fold, never a call.'));
+    if (v.breakdown.length) th.points.push('Their range on this board: ' + v.breakdown.map(b => b.pct + '% ' + b.label).join(', ') + '.' + v.lineNote);
+    if (sc.toCall) { th.points.push('Price: call ' + fmtBB(sc.toCall) + 'bb into ' + fmtBB(sc.pot) + 'bb, so you need about ' + pct(sc.toCall / (sc.pot + sc.toCall)) + '% equity. Minimum defence versus this size is about ' + (sc.sz === 's' ? '75' : sc.sz === 'm' ? '60' : '50') + '% of your range, so ask whether this hand is in your top ' + (sc.sz === 's' ? '75' : sc.sz === 'm' ? '60' : '50') + '%.'); }
+    else { th.points.push('Sizing: small bets (a third) tax his whole range cheaply and work with your entire range on boards you own; big bets (two-thirds or pot) polarise you to strong hands and draws.'); }
+    const spr = sc.left / sc.pot;
+    th.points.push('Stack-to-pot ratio ' + (Math.round(spr * 10) / 10) + ': ' + (spr <= 3 ? 'low, so top pair and overpairs are committed and draws can jam.' : spr <= 8 ? 'medium, so one pair can play for stacks only against a wide range.' : 'high, so one-pair hands should not stack off; you need two pair or better to play for it all.'));
+    const watch = [];
+    if (tex.twoTone || tex.monotone) { const sc2 = {}; sc.board.slice(0, 3).forEach(c => sc2[c.s] = (sc2[c.s] || 0) + 1); const s = Object.keys(sc2).sort((x, y) => sc2[y] - sc2[x])[0]; if (!(a.fd && a.fd.suit === s) && !/flush/.test(a.made)) watch.push('any ' + { s: 'spade', h: 'heart', d: 'diamond', c: 'club' }[s]); }
+    if (a.onePair && !/overpair/.test(a.made)) { const top = Math.max(...sc.board.map(c => RV[c.r])); if (top < 14) watch.push('overcards to the ' + RANK_WORD[RN[top]]); }
+    if (tex.connect >= 1) watch.push('straight cards near the board ranks');
+    if (sc.street !== 'river' && watch.length) th.points.push('Cards to watch on the next street: ' + watch.join(', ') + '.');
+    if (sc.profile !== 'unknown') th.points.push('Read: ' + PROFILES[sc.profile].desc + ' Which of his bluffs and value hands actually exist against this player?');
+    if (sc.short) th.points.push('Short stacks: with ' + fmtBB(sc.left) + 'bb behind, any real bet commits you; decide now whether you are willing to play for it all.');
+    if (sc.deep) th.points.push('Deep stacks: with ' + fmtBB(sc.left) + 'bb behind, a raise war means two pair or better, and implied odds for draws go up.');
+    th.equity = equityVs(sc.hand, sc.board, v.combos, rng, 1200); th.equityVs = 'that range';
+  }
+  return th;
+}
+
+/* ---------- top-level ---------- */
+function generate(seed, opt) {
+  const rng = mulberry32(seed);
+  let kind = opt.mode;
+  if (kind === 'mixed') kind = rng() < 0.45 ? 'preflop' : 'postflop';
+  let profile = opt.read || 'unknown';
+  if (opt.mode === 'exploit' || opt.read === 'random') {
+    profile = weighted(rng, [['nit', 0.32], ['station', 0.3], ['maniac', 0.23], ['tilt', 0.15]]);
+    if (opt.mode === 'exploit') kind = rng() < 0.42 ? 'preflop' : 'postflop';
+  }
+  const o = { table: opt.table || 'mix', stack: opt.stack || 'mix', profile, straddle: opt.straddle || 'off' };
+  let sc = kind === 'preflop' ? genPre(rng, o) : genPost(rng, o);
+  if (opt.mode === 'exploit' && rng() > 0.25) {
+    for (let i = 0; i < 12 && !(sc.exploit && sc.exploit.best !== sc.gto.best); i++) sc = kind === 'preflop' ? genPre(rng, o) : genPost(rng, o);
+  }
+  sc.seed = seed; sc.kindLabel = kind;
+  sc.answerKey = sc.exploit && profile !== 'unknown' ? sc.exploit : sc.gto;
+  sc.think = buildThink(sc, mulberry32(seed * 31 + 7));
+  return sc;
+}
+function grade(sc, actionId) {
+  const key = sc.answerKey; const ok = key.ok || [key.best]; const id = (sc.alias && sc.alias[actionId]) || actionId;
+  return { correct: ok.includes(id), best: key.best, ok };
+}
+function libraryCount() {
+  let pre = 0;
+  pre += RFI_ORDER.length * 169;
+  pre += (3 + 3 + 4) * 169; // vs open tables
+  pre += 8 * 169; // vs 3bet
+  pre += 2 * 169; // vs 4bet
+  pre += 2 * 169; // squeeze
+  pre += 4 * 169; // vs limp
+  return { preflop: pre * 3 /* stack depths */, postflopNodes: Object.keys(NODE_INFO).length };
+}
+function categoryOf(sc) {
+  if (sc.kind === 'pre') { const m = { rfi: 'Opening', vsOpen: 'Facing a raise', vs3bet: 'Facing a 3-bet', vs4bet: 'Facing a 4-bet', squeeze: 'Squeeze spots', vsLimp: 'Versus limpers' }; return m[sc.type]; }
+  const m = { cbet_ip: 'C-bet in position', cbet_oop: 'C-bet out of position', vs_cbet_bb: 'Defending the big blind', vs_cbet_ip: 'Facing c-bet in position', stab: 'Stabbing when checked to', cbet_3bp_ip: '3-bet pots', cbet_3bp_oop: '3-bet pots', turn_barrel: 'Turn barrels', turn_vs_barrel: 'Facing turn bets', river_value: 'River bets', river_vs_bet: 'Facing river bets', vs_raise: 'Facing check-raises', multiway_cbet: 'Multiway pots', multiway_vs_bet: 'Multiway pots' };
+  return m[sc.node];
+}
+
+
+</script>
+<script>
+/* ===================== UI ===================== */
+(function () {
+  const $ = (s) => document.querySelector(s);
+  const KEY = 'gto-exploit-trainer-v1';
+  const MODES = [['preflop', 'Preflop'], ['postflop', 'Postflop'], ['exploit', 'Exploit'], ['mixed', 'Mixed']];
+  const state = { mode: 'preflop', table: 'mix', stack: 'mix', read: 'unknown', straddle: 'off', seed: 0, sc: null, answered: false, pick: null, stats: freshStats(), mistakes: [], review: null };
+  function freshStats() { return { total: 0, correct: 0, streak: 0, best: 0, cats: {} }; }
+
+  function load() {
+    try {
+      const raw = localStorage.getItem(KEY); if (!raw) return;
+      const d = JSON.parse(raw);
+      if (d.settings) { ['mode', 'table', 'stack', 'read', 'straddle', 'seed'].forEach(k => { if (d.settings[k] !== undefined) state[k] = d.settings[k]; }); }
+      if (d.stats) state.stats = Object.assign(freshStats(), d.stats);
+      if (Array.isArray(d.mistakes)) state.mistakes = d.mistakes;
+    } catch (e) { /* storage unavailable: session only */ }
+  }
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify({ settings: { mode: state.mode, table: state.table, stack: state.stack, read: state.read, straddle: state.straddle, seed: state.seed }, stats: state.stats, mistakes: state.mistakes })); } catch (e) { /* ignore */ }
+  }
+
+  /* ---------- rendering helpers ---------- */
+  const SUIT = SUIT_GLYPH; const RED = { h: 1, d: 1 };
+  function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+  function cardHTML(c, small) { return '<div class="card' + (RED[c.s] ? ' red' : '') + (small ? ' sm' : '') + '" aria-label="' + c.r + ' of ' + { s: 'spades', h: 'hearts', d: 'diamonds', c: 'clubs' }[c.s] + '"><span class="r">' + c.r + '</span><span class="s2">' + SUIT[c.s] + '</span><span class="s">' + SUIT[c.s] + '</span></div>'; }
+  function cardSVG(x, y, c) {
+    const w = 26, h = 36; const col = RED[c.s] ? 'var(--red)' : 'var(--card-ink)';
+    return '<g transform="translate(' + (x - w / 2) + ',' + (y - h / 2) + ')"><rect width="' + w + '" height="' + h + '" rx="3.5" fill="var(--card)" stroke="var(--card-edge)"/><text x="4" y="14" font-size="12" font-weight="800" fill="' + col + '">' + c.r + '</text><text x="' + (w - 4) + '" y="' + (h - 5) + '" font-size="13" text-anchor="end" fill="' + col + '">' + SUIT[c.s] + '</text></g>';
+  }
+  function actionLabel(sc, id) { const a = sc.actions.find(x => x.id === id); return a ? a.label : (ACT_LABEL[id] || id); }
+  function shortLabel(label) { return label.replace(/\s*\(.*?\)\s*$/, ''); }
+
+  function tableSVG(sc) {
+    const n = sc.n, labels = TABLES[n]; const cx = 180, cy = 126, RX = 150, RY = 92;
+    let s = '<svg viewBox="0 0 360 252" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Table view: ' + esc(sc.title) + '">';
+    s += '<ellipse cx="' + cx + '" cy="' + cy + '" rx="146" ry="84" fill="var(--rail)" stroke="var(--rail-edge)" stroke-width="2"/>';
+    s += '<ellipse cx="' + cx + '" cy="' + cy + '" rx="134" ry="72" fill="var(--felt)" stroke="var(--felt-edge)" stroke-width="2"/>';
+    s += '<ellipse cx="' + cx + '" cy="' + cy + '" rx="112" ry="52" fill="none" stroke="rgba(255,255,255,.10)" stroke-width="1.5"/>';
+    const btnIdx = labels.indexOf('BTN');
+    const pos = (i) => { const k = (i - sc.heroIdx + n) % n; const ang = Math.PI / 2 + k * (2 * Math.PI / n); return { x: cx + RX * Math.cos(ang), y: cy + RY * Math.sin(ang), k }; };
+    // dealer button
+    { const p = pos(btnIdx); const bx = cx + 0.74 * (p.x - cx), by = cy + 0.74 * (p.y - cy); s += '<circle cx="' + bx + '" cy="' + by + '" r="8" fill="var(--gold)" stroke="rgba(0,0,0,.25)"/><text x="' + bx + '" y="' + (by + 3.5) + '" font-size="9" font-weight="800" text-anchor="middle" fill="#3A2A08">D</text>'; }
+    // center: board + pot
+    if (sc.board && sc.board.length) { const k = sc.board.length; const start = cx - (k - 1) * 15; sc.board.forEach((c, i) => { s += cardSVG(start + i * 30, cy - 6, c); }); }
+    const potY = sc.board ? cy + 30 : cy + 2;
+    s += '<text x="' + cx + '" y="' + potY + '" font-size="12" font-weight="700" text-anchor="middle" fill="rgba(255,255,255,.92)">Pot ' + fmtBB(sc.pot) + 'bb</text>';
+    if (!sc.board) s += '<text x="' + cx + '" y="' + (cy - 14) + '" font-size="11" text-anchor="middle" fill="rgba(255,255,255,.55)">' + n + '-handed · ' + sc.stack + 'bb stacks</text>';
+    // seats
+    sc.seats.forEach((seat, i) => {
+      const p = pos(i); const isHero = seat.state === 'hero'; const folded = seat.state === 'folded';
+      const w = 58, h = 30; const fill = isHero ? 'var(--hero-seat)' : folded ? 'var(--seat-dim)' : 'var(--seat)'; const tcol = isHero ? '#2B1F05' : 'var(--seat-text)';
+      const stackTxt = (sc.kind === 'post' && !folded) ? fmtBB(sc.left) + 'bb' : (folded ? '' : sc.stack + 'bb');
+      s += '<g opacity="' + (folded ? 0.45 : 1) + '">';
+      s += '<rect x="' + (p.x - w / 2) + '" y="' + (p.y - h / 2) + '" width="' + w + '" height="' + h + '" rx="9" fill="' + fill + '" stroke="' + (isHero ? 'var(--gold)' : 'rgba(255,255,255,.12)') + '" stroke-width="' + (isHero ? 2 : 1) + '"/>';
+      s += '<text x="' + p.x + '" y="' + (p.y - 2) + '" font-size="11" font-weight="800" text-anchor="middle" fill="' + tcol + '">' + (isHero ? 'You · ' + seat.label : seat.label) + '</text>';
+      s += '<text x="' + p.x + '" y="' + (p.y + 10) + '" font-size="9.5" text-anchor="middle" fill="' + tcol + '" opacity=".8">' + (folded ? 'folded' : stackTxt) + '</text>';
+      if (seat.act && !folded && !isHero) { const ay = p.k > n / 4 && p.k < 3 * n / 4 ? p.y + 26 : p.y + 26; s += '<text x="' + p.x + '" y="' + ay + '" font-size="10.5" font-weight="700" text-anchor="middle" fill="var(--gold)">' + esc(seat.act) + '</text>'; }
+      if (seat.profile && seat.profile !== 'unknown' && !folded && !isHero) { const lab = PROFILES[seat.profile].short; const bw = lab.length * 6 + 12; s += '<rect x="' + (p.x - bw / 2) + '" y="' + (p.y - 30) + '" width="' + bw + '" height="15" rx="7.5" fill="var(--gold)"/><text x="' + p.x + '" y="' + (p.y - 19) + '" font-size="9.5" font-weight="800" text-anchor="middle" fill="#2B1F05">' + lab + '</text>'; }
+      s += '</g>';
+    });
+    s += '</svg>';
+    return s;
+  }
+
+  /* ---------- scenario flow ---------- */
+  function currentOpt() { return { mode: state.mode, table: state.table, stack: state.stack, read: state.read, straddle: state.straddle }; }
+  function newScenario(seed) {
+    if (state.review) {
+      const item = state.review.queue[0];
+      if (!item) { exitReview(); return; }
+      state.sc = generate(item.seed, item.opt); state.sc.reviewItem = item;
+    } else {
+      state.seed = seed || (state.seed + 1);
+      state.sc = generate(state.seed, currentOpt());
+    }
+    state.answered = false; state.pick = null;
+    save(); render();
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  }
+  function startReview() {
+    if (!state.mistakes.length) return;
+    state.review = { queue: state.mistakes.slice(), total: state.mistakes.length, cleared: 0 };
+    newScenario();
+  }
+  function exitReview() { state.review = null; newScenario(state.seed + 1); }
+  function mistakeKey(m) { return m.seed + '|' + m.opt.mode + '|' + m.opt.table + '|' + m.opt.stack + '|' + m.opt.read + '|' + m.opt.straddle; }
+  function recordMistake(sc, pick) {
+    const item = { seed: sc.seed, opt: sc.reviewItem ? sc.reviewItem.opt : currentOpt(), pick, cat: categoryOf(sc), title: sc.title, at: Date.now() };
+    const k = mistakeKey(item); if (state.mistakes.some(m => mistakeKey(m) === k)) return;
+    state.mistakes.push(item); if (state.mistakes.length > 60) state.mistakes.shift();
+  }
+  function clearMistake(sc) {
+    const k = mistakeKey(sc.reviewItem); state.mistakes = state.mistakes.filter(m => mistakeKey(m) !== k);
+  }
+  function render() {
+    const sc = state.sc;
+    $('#title').textContent = sc.title;
+    $('#meta').textContent = sc.n + '-max · ' + sc.stack + 'bb' + (sc.straddle ? ' · straddle' : '') + ' · #' + sc.seed;
+    const banner = $('#reviewBanner');
+    if (state.review) { banner.hidden = false; banner.innerHTML = '<span>Reviewing missed spots · <b>' + state.review.queue.length + '</b> left</span><button type="button" id="exitReview">Exit review</button>'; $('#exitReview').addEventListener('click', exitReview); }
+    else banner.hidden = true;
+    renderThink(sc, false);
+    $('#table').innerHTML = tableSVG(sc);
+    const prof = PROFILES[sc.profile];
+    $('#readLine').innerHTML = '<span class="read-pill" data-p="' + sc.profile + '"><i></i>' + esc(prof.short === 'Unknown' ? 'Unknown player' : prof.label) + '</span><span>' + esc(prof.desc) + '</span>';
+    $('#history').innerHTML = sc.history.length ? sc.history.map(h => '<span>' + esc(h) + '</span>').join('') : '<span>Everyone folds to you.</span>';
+    $('#heroCards').innerHTML = sc.hand.map(c => cardHTML(c)).join('');
+    let info = '<b>' + esc(handName(sc.cls)) + '</b>';
+    if (sc.kind === 'post') info += 'Board: ' + esc(boardStr(sc.board));
+    else info += esc(TABLES[sc.n][sc.heroIdx]) + ' · ' + (sc.stack) + 'bb effective';
+    $('#heroInfo').innerHTML = info;
+    let pl = '<b>Pot ' + fmtBB(sc.pot) + 'bb</b>';
+    if (sc.toCall) pl += ' · ' + fmtBB(sc.toCall) + 'bb to call';
+    if (sc.kind === 'post') pl += ' · ' + fmtBB(sc.left) + 'bb behind';
+    $('#potLine').innerHTML = pl;
+    $('#question').textContent = sc.profile === 'unknown' ? 'Your action?' : 'Your action against this player?';
+    const acts = $('#actions'); acts.innerHTML = '';
+    sc.actions.forEach((a, i) => { const b = document.createElement('button'); b.type = 'button'; b.dataset.id = a.id; b.innerHTML = '<span class="kbd">' + (i + 1) + '</span>' + esc(a.label); b.addEventListener('click', () => answer(a.id)); acts.appendChild(b); });
+    $('#feedback').hidden = true; $('#feedback').innerHTML = '';
+    renderStats();
+  }
+  function answer(id) {
+    if (state.answered) return;
+    const sc = state.sc; const g = grade(sc, id);
+    state.answered = true; state.pick = id;
+    // stats
+    const st = state.stats; st.total++; if (g.correct) { st.correct++; st.streak++; st.best = Math.max(st.best, st.streak); } else st.streak = 0;
+    const cat = categoryOf(sc); st.cats[cat] = st.cats[cat] || { t: 0, c: 0 }; st.cats[cat].t++; if (g.correct) st.cats[cat].c++;
+    if (state.review) { state.review.queue.shift(); if (g.correct) { clearMistake(sc); state.review.cleared++; } else { state.review.queue.push(sc.reviewItem); } }
+    else if (!g.correct) recordMistake(sc, id);
+    save();
+    renderThink(sc, true);
+    // mark buttons
+    const canon = (x) => (sc.alias && sc.alias[x]) || x;
+    document.querySelectorAll('#actions button').forEach(b => {
+      const bid = canon(b.dataset.id); b.disabled = true;
+      if (bid === g.best) b.classList.add('is-best'); else if (g.ok.includes(bid)) b.classList.add('is-ok');
+      if (b.dataset.id === id) { b.classList.add('picked'); if (!g.correct) b.classList.add('is-wrong'); }
+    });
+    renderFeedback(g);
+    renderStats();
+  }
+  function renderFeedback(g) {
+    const sc = state.sc; const fb = $('#feedback'); const prof = PROFILES[sc.profile];
+    const graded = sc.answerKey; const isExploit = graded === sc.exploit;
+    const others = graded.ok.filter(x => x !== graded.best).map(x => shortLabel(actionLabel(sc, x)));
+    let h = '<div class="verdict ' + (g.correct ? 'good' : 'bad') + '"><span class="dot">' + (g.correct ? '\u2713' : '\u2715') + '</span><div>' + (g.correct ? 'Correct' : 'Not quite') + '<br><small>You chose ' + esc(shortLabel(actionLabel(sc, state.pick))) + (g.correct && state.pick !== graded.best ? ' — fine, though ' + esc(shortLabel(actionLabel(sc, graded.best))) + ' is the main line' : '') + '</small></div></div>';
+    if (sc.profile === 'unknown') {
+      h += '<div class="block"><h3>GTO baseline <span class="ans">' + esc(shortLabel(actionLabel(sc, sc.gto.best))) + '</span>' + (others.length ? '<span class="also">also fine: ' + esc(others.join(', ')) + '</span>' : '') + '</h3><p>' + esc(sc.gto.note) + '</p></div>';
+    } else {
+      if (sc.exploit) {
+        const same = sc.exploit.best === sc.gto.best;
+        h += '<div class="block"><h3>Against ' + esc(prof.label.toLowerCase()) + ' <span class="ans">' + esc(shortLabel(actionLabel(sc, sc.exploit.best))) + '</span>' + (others.length ? '<span class="also">also fine: ' + esc(others.join(', ')) + '</span>' : '') + '<span class="tag">' + (same ? 'same as baseline, bigger edge' : 'deviates from GTO') + '</span></h3><p>' + esc(sc.exploit.note) + '</p></div>';
+        h += '<div class="block"><h3>GTO baseline (unknown player) <span class="ans">' + esc(shortLabel(actionLabel(sc, sc.gto.best))) + '</span></h3><p>' + esc(sc.gto.note) + '</p></div>';
+      } else {
+        h += '<div class="block"><h3>Against ' + esc(prof.label.toLowerCase()) + ' <span class="ans">' + esc(shortLabel(actionLabel(sc, sc.gto.best))) + '</span>' + (others.length ? '<span class="also">also fine: ' + esc(others.join(', ')) + '</span>' : '') + '<span class="tag">no deviation</span></h3><p>This read does not change the spot: the baseline play is already the best exploit here.</p></div>';
+        h += '<div class="block"><h3>GTO baseline</h3><p>' + esc(sc.gto.note) + '</p></div>';
+      }
+    }
+    if (sc.think && sc.think.equity !== null) h += '<div class="block"><h3>Equity check <span class="ans">' + sc.think.equity + '%</span><span class="also">against ' + esc(sc.think.equityVs) + ', simulated</span></h3><p>' + esc(equityComment(sc)) + '</p></div>';
+    if (sc.stackNote) h += '<div class="stack-note">' + esc(sc.stackNote) + '</div>';
+    h += '<button class="next" type="button" id="nextBtn">' + (state.review ? (state.review.queue.length ? 'Next missed spot' : 'All cleared — back to training') : 'Next spot') + '</button>';
+    fb.innerHTML = h; fb.hidden = false;
+    $('#nextBtn').addEventListener('click', () => newScenario());
+    fb.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+  function renderThink(sc, revealed) {
+    const th = sc.think; if (!th) { $('#think').hidden = true; return; }
+    let h = '';
+    if (th.ranges.length) {
+      h += '<div class="th-block"><h4>Hands to put them on</h4>';
+      th.ranges.forEach(r => {
+        h += '<p><b>' + esc(r.who.charAt(0).toUpperCase() + r.who.slice(1)) + '</b> (about ' + r.pct + '% of hands): ' + esc(r.summary || 'a narrow range') + (r.note ? '. ' + esc(r.note.charAt(0).toUpperCase() + r.note.slice(1)) : '') + '.</p>';
+        if (r.breakdown && r.breakdown.length) {
+          h += '<ul class="bd">' + r.breakdown.map(b => '<li><span class="bd-bar"><i style="width:' + b.pct + '%"></i></span><span class="bd-pct">' + b.pct + '%</span><span class="bd-lab">' + esc(b.label) + '</span><span class="bd-h">' + esc(b.hands.join(' ')) + '</span></li>').join('') + '</ul>';
+          if (r.lineNote) h += '<p class="bd-note">' + esc(r.lineNote.trim()) + '</p>';
+        }
+      });
+      h += '</div>';
+    } else if (sc.kind === 'pre') {
+      h += '<div class="th-block"><h4>Hands to put them on</h4><p>Nobody has entered the pot yet, so every player behind you holds a random hand. About 5% of the time each of them wakes up with a hand that 3-bets you.</p></div>';
+    }
+    h += '<div class="th-block"><h4>Things to consider</h4><ul class="pts">' + th.points.map(p => '<li>' + esc(p) + '</li>').join('') + '</ul></div>';
+    if (revealed && th.equity !== null) h += '<p class="eq">Your equity against ' + esc(th.equityVs) + ': about <b>' + th.equity + '%</b> (simulated).</p>';
+    else if (th.equity !== null) h += '<p class="eq muted">Your equity against that range is revealed after you answer.</p>';
+    $('#thinkBody').innerHTML = h; $('#think').hidden = false;
+    if (!revealed) $('#think').open = false;
+  }
+  function equityComment(sc) {
+    const e = sc.think.equity; const need = sc.toCall ? Math.round(sc.toCall / (sc.pot + sc.toCall) * 100) : null;
+    if (need !== null) return e >= need + 8 ? 'Comfortably above the ' + need + '% you need to call, though equity alone ignores position, playability and what happens on later streets.' : e >= need - 3 ? 'Right around the ' + need + '% you need: this is where position, implied odds and the read decide the play.' : 'Below the ' + need + '% you need to call on price alone; only fold equity or big implied odds could rescue a continue.';
+    return e >= 65 ? 'A big edge over the range: think about how to get paid, not whether to bet.' : e >= 50 ? 'A modest edge: bet for value and protection where the range calls with worse.' : e >= 35 ? 'Behind the range on equity; bets here are mostly about fold equity, so pick spots where the range misses.' : 'Well behind the range: this hand wins by folding out better hands or not at all.';
+  }
+  function renderStats() {
+    const rb = $('#reviewBtn'); if (rb) { rb.textContent = 'Review missed spots' + (state.mistakes.length ? ' (' + state.mistakes.length + ')' : ''); rb.disabled = !state.mistakes.length || !!state.review; }
+    const st = state.stats; const pct = st.total ? Math.round(st.correct / st.total * 100) : 0;
+    $('#statsHead').innerHTML = '<b>' + st.correct + ' / ' + st.total + ' correct' + (st.total ? ' (' + pct + '%)' : '') + '</b><span>streak ' + st.streak + ' · best ' + st.best + '</span>';
+    $('#bar').style.width = pct + '%';
+    const cats = Object.keys(st.cats).sort((a, b) => (st.cats[a].c / st.cats[a].t) - (st.cats[b].c / st.cats[b].t));
+    $('#cats').innerHTML = cats.length ? cats.map(c => { const v = st.cats[c]; const p = Math.round(v.c / v.t * 100); return '<li class="' + (v.t >= 5 && p < 60 ? 'weak' : '') + '"><span>' + esc(c) + '</span><span>' + v.c + '/' + v.t + ' · ' + p + '%</span></li>'; }).join('') : '<li><span>No spots played yet.</span><span></span></li>';
+  }
+
+  /* ---------- settings ---------- */
+  function seg(id, values, key, onChange) {
+    const el = $(id); el.innerHTML = '';
+    values.forEach(([v, label]) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = label; b.setAttribute('aria-pressed', String(state[key] === v)); b.addEventListener('click', () => { state[key] = v; [...el.children].forEach(c => c.setAttribute('aria-pressed', 'false')); b.setAttribute('aria-pressed', 'true'); save(); if (onChange) onChange(); }); el.appendChild(b); });
+  }
+  function buildSettings() {
+    seg('#segTable', [['mix', 'Mix'], ['4', '4-handed'], ['6', '6-handed'], ['8', '8-handed']], 'table');
+    seg('#segStack', [['mix', 'Mix'], ['40', '40bb (short / rebuy)'], ['100', '100bb'], ['200', '200bb (deep)']], 'stack');
+    seg('#segRead', [['unknown', 'Unknown / new'], ['nit', 'Tight'], ['station', 'Station'], ['maniac', 'Maniac'], ['tilt', 'Tilted rebuy'], ['random', 'Random']], 'read');
+    seg('#segStraddle', [['off', 'Off'], ['mix', 'Sometimes'], ['on', 'Always (UTG 2bb)']], 'straddle');
+    $('#reviewBtn').addEventListener('click', startReview);
+    $('#jumpBtn').addEventListener('click', () => { const v = parseInt($('#jumpInput').value, 10); if (v > 0) { closeSheet(); state.review = null; newScenario(v); } });
+    $('#resetBtn').addEventListener('click', () => { if (confirm('Clear your accuracy stats?')) { state.stats = freshStats(); save(); renderStats(); } });
+    $('#applyBtn').addEventListener('click', () => { closeSheet(); state.review = null; newScenario(); });
+    $('#sheetBg').addEventListener('click', closeSheet);
+    $('#gear').addEventListener('click', openSheet);
+  }
+  function openSheet() { $('#sheet').classList.add('open'); $('#sheetBg').classList.add('open'); $('#jumpInput').value = state.seed; }
+  function closeSheet() { $('#sheet').classList.remove('open'); $('#sheetBg').classList.remove('open'); }
+
+  function buildModes() {
+    const nav = $('#modes'); nav.innerHTML = '';
+    MODES.forEach(([id, label]) => { const b = document.createElement('button'); b.type = 'button'; b.setAttribute('role', 'tab'); b.textContent = label; b.setAttribute('aria-selected', String(state.mode === id)); b.addEventListener('click', () => { state.mode = id; state.review = null; [...nav.children].forEach(c => c.setAttribute('aria-selected', 'false')); b.setAttribute('aria-selected', 'true'); newScenario(); }); nav.appendChild(b); });
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+    if (e.key >= '1' && e.key <= '9' && !state.answered) { const b = document.querySelectorAll('#actions button')[+e.key - 1]; if (b) b.click(); }
+    else if ((e.key === 'Enter' || e.key === 'n' || e.key === 'N' || e.key === ' ') && state.answered) { e.preventDefault(); newScenario(); }
+    else if (e.key === 'Escape') closeSheet();
+  });
+
+  load();
+  const lib = libraryCount();
+  $('#libNote').textContent = 'Library: ' + lib.preflop.toLocaleString() + ' enumerable preflop spots across three stack depths, plus ' + lib.postflopNodes + ' postflop decision types on unlimited boards. Every spot number is reproducible.';
+  buildModes(); buildSettings();
+  newScenario(state.seed + 1);
+})();
+
+</script>
+<script>
+if ('serviceWorker' in navigator && location.protocol === 'https:') { window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); }); }
+</script>
+</body>
+</html>
